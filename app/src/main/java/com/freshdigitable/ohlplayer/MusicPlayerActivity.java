@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -54,7 +55,8 @@ public class MusicPlayerActivity extends AppCompatActivity {
         };
       }
     };
-    controller = (PlaybackControlView) findViewById(R.id.playback_confroller);
+    ((TextView) findViewById(R.id.player_title)).setText(getIntent().getStringExtra("title"));
+    controller = (PlaybackControlView) findViewById(R.id.player_controller);
     controller.setPlayer(simpleExoPlayer);
     controller.show();
 
