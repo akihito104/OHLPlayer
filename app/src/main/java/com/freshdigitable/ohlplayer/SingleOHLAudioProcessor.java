@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 
 public class SingleOHLAudioProcessor implements AudioProcessor {
   private static final String TAG = SingleOHLAudioProcessor.class.getSimpleName();
+  private static final int VOLUME = 9000;
   private int channelCount = 0;
   private HRTF hrtfL, hrtfR;
   private ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -71,6 +72,29 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
       return;
     }
     final ShortBuffer shortBuffer = inputBuf.asShortBuffer();
+    if (enabled) {
+      convo(shortBuffer);
+    } else {
+      thru(shortBuffer);
+    }
+
+    inputBuf.position(inputBuf.position() + inputBuf.remaining());
+  }
+
+  private void thru(ShortBuffer shortBuffer) {
+    if (buf.length != shortBuffer.remaining()) {
+      buf = new short[shortBuffer.remaining()];
+    }
+    shortBuffer.get(buf);
+    for (int i = 0; i < tailL.length; i++) {
+      buf[i * 2] += (short) (tailL[i] / VOLUME);
+      buf[i * 2 + 1] += (short) (tailR[i] / VOLUME);
+    }
+    tailL = new int[0];
+    tailR = new int[0];
+  }
+
+  private void convo(ShortBuffer shortBuffer) {
     final int remaining = shortBuffer.remaining();
     final int inputSize = remaining / 2;
     final short[] input = new short[inputSize];
@@ -87,12 +111,13 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
         convoL[i] += tailL[i];
         convoR[i] += tailR[i];
       }
+
       if (buf.length != remaining) {
         buf = new short[remaining];
       }
       for (int i = 0; i < inputSize; i++) {
-        buf[i * 2] = (short) (convoL[i] / 60000);
-        buf[i * 2 + 1] = (short) (convoR[i] / 60000);
+        buf[i * 2] = (short) (convoL[i] / VOLUME);
+        buf[i * 2 + 1] = (short) (convoR[i] / VOLUME);
       }
       if (tailL.length != convoL.length - inputSize) {
         tailL = new int[convoL.length - inputSize];
@@ -100,8 +125,6 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
       }
       System.arraycopy(convoL, inputSize, tailL, 0, tailL.length);
       System.arraycopy(convoR, inputSize, tailR, 0, tailR.length);
-
-      inputBuf.position(inputBuf.position() + inputBuf.remaining());
     } catch (InterruptedException | ExecutionException e) {
       e.printStackTrace();
     }
@@ -120,6 +143,7 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
 //    Log.d(TAG, "getOutput: ");
     final ByteBuffer buffer = ByteBuffer.allocate(buf.length * 2).order(ByteOrder.nativeOrder());
     for (short s: buf) {
+//      max = Math.max(max, s * s);
       buffer.putShort(s);
     }
     buffer.flip();
@@ -128,19 +152,22 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
 
   @Override
   public boolean isEnded() {
-    Log.d(TAG, "isEnded: ");
     return inputEnded;
   }
 
   @Override
   public void flush() {
-    Log.d(TAG, "flush: ");
     this.inputEnded = false;
   }
 
   @Override
   public void release() {
-    Log.d(TAG, "release: ");
     inputEnded = false;
+  }
+
+  private boolean enabled = false;
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
   }
 }

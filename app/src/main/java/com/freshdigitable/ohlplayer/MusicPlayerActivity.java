@@ -6,6 +6,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.WindowManager;
+import android.widget.CompoundButton;
+import android.widget.Switch;
+import android.widget.TextView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -27,17 +31,21 @@ public class MusicPlayerActivity extends AppCompatActivity {
   private static final String TAG = MusicPlayerActivity.class.getSimpleName();
   private SimpleExoPlayer simpleExoPlayer;
   private PlaybackControlView controller;
+  private Switch ohlToggle;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_music_player);
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     final HRTF hrtfL;
     final HRTF hrtfR;
+    final SingleOHLAudioProcessor singleOHLAudioProcessor;
     try {
       hrtfL = HRTF.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCL_44100.DDB"));
       hrtfR = HRTF.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCR_44100.DDB"));
+      singleOHLAudioProcessor = new SingleOHLAudioProcessor(hrtfL, hrtfR);
     } catch (IOException e) {
       Log.e(TAG, "onCreate: ", e);
       return;
@@ -49,14 +57,20 @@ public class MusicPlayerActivity extends AppCompatActivity {
         null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF,DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS) {
       @Override
       protected AudioProcessor[] buildAudioProcessors() {
-        return new AudioProcessor[]{
-            new SingleOHLAudioProcessor(hrtfL, hrtfR)
-        };
+        return new AudioProcessor[]{singleOHLAudioProcessor};
       }
     };
-    controller = (PlaybackControlView) findViewById(R.id.playback_confroller);
+    ((TextView) findViewById(R.id.player_title)).setText(getIntent().getStringExtra("title"));
+    controller = (PlaybackControlView) findViewById(R.id.player_controller);
     controller.setPlayer(simpleExoPlayer);
     controller.show();
+    ohlToggle = (Switch) findViewById(R.id.ohl_toggle);
+    ohlToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        singleOHLAudioProcessor.setEnabled(isChecked);
+      }
+    });
 
     final DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
     final DefaultDataSourceFactory dataSourceFactory
@@ -77,6 +91,9 @@ public class MusicPlayerActivity extends AppCompatActivity {
     }
     if (controller != null) {
       controller.setPlayer(null);
+    }
+    if (ohlToggle != null) {
+      ohlToggle.setOnCheckedChangeListener(null);
     }
   }
 
