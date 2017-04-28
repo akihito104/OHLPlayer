@@ -1,8 +1,5 @@
 package com.freshdigitable.ohlplayer;
 
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -14,6 +11,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class MusicListActivity extends AppCompatActivity {
 
@@ -24,19 +24,24 @@ public class MusicListActivity extends AppCompatActivity {
 
     final File externalFilesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
     final String[] fileList = externalFilesDir.list();
+    final ArrayList<MusicItem> musicItems = new ArrayList<>();
+    for (String s : fileList) {
+      musicItems.add(new MusicItem(externalFilesDir, s));
+    }
 
     RecyclerView listView = (RecyclerView) findViewById(R.id.list);
     final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
     linearLayoutManager.setAutoMeasureEnabled(true);
     listView.setLayoutManager(linearLayoutManager);
-    listView.setAdapter(new ViewAdapter(fileList));
+    listView.setAdapter(new ViewAdapter(musicItems));
   }
 
   private static class ViewAdapter extends RecyclerView.Adapter<ViewAdapter.Holder> {
-    private final String[] fileList;
+    private final List<MusicItem> fileList;
 
-    ViewAdapter(String[] fileList) {
+    ViewAdapter(List<MusicItem> fileList) {
       this.fileList = fileList;
+      Collections.sort(this.fileList);
     }
 
     @Override
@@ -47,16 +52,12 @@ public class MusicListActivity extends AppCompatActivity {
 
     @Override
     public void onBindViewHolder(Holder holder, int position) {
-      final String titleText = fileList[position];
-      holder.title.setText(titleText);
+      final MusicItem item = fileList.get(position);
+      holder.title.setText(item.getTitle());
       holder.itemView.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-          final Context context = v.getContext();
-          Intent intent = new Intent(context, MainActivity.class);
-          intent.setData(Uri.parse(""));
-          intent.putExtra("title", titleText);
-          context.startActivity(intent);
+          MusicPlayerActivity.start(v.getContext(), item);
         }
       });
     }
@@ -69,7 +70,7 @@ public class MusicListActivity extends AppCompatActivity {
 
     @Override
     public int getItemCount() {
-      return fileList.length;
+      return fileList.size();
     }
 
     static class Holder extends RecyclerView.ViewHolder {
