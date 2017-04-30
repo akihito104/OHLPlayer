@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.ui.DebugTextViewHelper;
 import com.google.android.exoplayer2.ui.PlaybackControlView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
@@ -32,6 +33,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
   private SimpleExoPlayer simpleExoPlayer;
   private PlaybackControlView controller;
   private Switch ohlToggle;
+  private DebugTextViewHelper debugTextViewHelper;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +73,8 @@ public class MusicPlayerActivity extends AppCompatActivity {
         singleOHLAudioProcessor.setEnabled(isChecked);
       }
     });
+    final TextView debugText = (TextView) findViewById(R.id.player_debug);
+    debugTextViewHelper = new DebugTextViewHelper(simpleExoPlayer, debugText);
 
     final DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
     final DefaultDataSourceFactory dataSourceFactory
@@ -80,6 +84,18 @@ public class MusicPlayerActivity extends AppCompatActivity {
     Uri uri = getIntent().getData();
     final ExtractorMediaSource extractorMediaSource = new ExtractorMediaSource(uri, dataSourceFactory, extractorsFactory, null, null);
     simpleExoPlayer.prepare(extractorMediaSource);
+  }
+
+  @Override
+  protected void onStart() {
+    super.onStart();
+    debugTextViewHelper.start();
+  }
+
+  @Override
+  protected void onStop() {
+    super.onStop();
+    debugTextViewHelper.stop();
   }
 
   @Override
