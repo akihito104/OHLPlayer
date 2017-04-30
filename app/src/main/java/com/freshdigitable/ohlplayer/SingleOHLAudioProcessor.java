@@ -86,20 +86,32 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
       buf = new short[shortBuffer.remaining()];
     }
     shortBuffer.get(buf);
-    for (int i = 0; i < tailL.length; i++) {
+    final int size = Math.min(buf.length / 2, tailL.length);
+    for (int i = 0; i < size; i++) {
       buf[i * 2] += (short) (tailL[i] / VOLUME);
       buf[i * 2 + 1] += (short) (tailR[i] / VOLUME);
     }
-    tailL = new int[0];
-    tailR = new int[0];
+    if (size < tailL.length) {
+      int[] newL = new int[tailL.length - size];
+      int[] newR = new int[tailR.length - size];
+      System.arraycopy(tailL, size, newL, 0, newL.length);
+      System.arraycopy(tailR, size, newR, 0, newR.length);
+      tailL = newL;
+      tailR = newR;
+    } else {
+      tailL = new int[0];
+      tailR = new int[0];
+    }
   }
 
   private void convo(ShortBuffer shortBuffer) {
     final int remaining = shortBuffer.remaining();
     final int inputSize = remaining / 2;
+    final short[] inBuf = new short[remaining];
+    shortBuffer.get(inBuf);
     final short[] input = new short[inputSize];
     for (int i = 0; i < inputSize; i++) { // to monaural
-      input[i] = (short) ((shortBuffer.get(i * 2) + shortBuffer.get(i * 2 + 1)) / 2);
+      input[i] = (short) ((inBuf[i * 2] + inBuf[i * 2 + 1]) / 2);
     }
     try {
       final List<Future<int[]>> futures = executor.invokeAll(Arrays.asList(
