@@ -23,12 +23,12 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
   private static final String TAG = SingleOHLAudioProcessor.class.getSimpleName();
   private static final int VOLUME = 9000;
   private int channelCount = 0;
-  private HRTF hrtfL, hrtfR;
+  private ImpulseResponse hrirL, hrirR;
   private ExecutorService executor = Executors.newFixedThreadPool(2);
 
-  SingleOHLAudioProcessor(HRTF hrtfL, HRTF hrtfR) {
-    this.hrtfL = hrtfL;
-    this.hrtfR = hrtfR;
+  SingleOHLAudioProcessor(ImpulseResponse hrirL, ImpulseResponse hrirR) {
+    this.hrirL = hrirL;
+    this.hrirR = hrirR;
   }
 
   @Override
@@ -115,8 +115,8 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
     }
     try {
       final List<Future<int[]>> futures = executor.invokeAll(Arrays.asList(
-          hrtfL.callableConvo(input),
-          hrtfR.callableConvo(input)));
+          hrirL.callableConvo(input),
+          hrirR.callableConvo(input)));
       final int[] convoL = futures.get(0).get();
       final int[] convoR = futures.get(1).get();
       for (int i = 0; i < tailR.length; i++) {

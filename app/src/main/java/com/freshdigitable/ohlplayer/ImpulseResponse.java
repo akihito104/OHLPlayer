@@ -11,10 +11,10 @@ import java.util.concurrent.Callable;
 /**
  * Created by akihit on 2015/04/18.
  */
-public class HRTF {
+public class ImpulseResponse {
   private final int[] impulseRes;
 
-  public static HRTF loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
+  public static ImpulseResponse loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate((int) afd.getLength()).order(ByteOrder.LITTLE_ENDIAN);
     FileChannel fc = null;
     int bufSize;
@@ -33,7 +33,7 @@ public class HRTF {
     for (int i = 0; i < ir.length; i++) {
       ir[i] = (int) (doubleBuf[i + 190] * 32768.0);
     }
-    return new HRTF(ir);
+    return new ImpulseResponse(ir);
   }
 
   private int[] res = new int[0];
@@ -66,7 +66,7 @@ public class HRTF {
     };
   }
 
-  private HRTF(int[] ir) {
+  private ImpulseResponse(int[] ir) {
     this.impulseRes = ir;
   }
 }
