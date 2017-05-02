@@ -69,4 +69,12 @@ public class ImpulseResponse {
   private ImpulseResponse(int[] ir) {
     this.impulseRes = ir;
   }
+
+  public int getSize() {
+    return this.impulseRes.length;
+  }
+
+  public int[] getImpulseResponce() {
+    return impulseRes;
+  }
 }
