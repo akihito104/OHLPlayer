@@ -24,40 +24,58 @@ public class CalcUtil {
     return res;
   }
 
-  // TODO
   public static Complex[] fft(final short[] sig, int pow) {
-    final short[] fftSig = new short[1 << pow];
-    System.arraycopy(sig, 0, fftSig, 0, sig.length);
-
-    return new Complex[0];
+    final Complex[] fftSig = new Complex[1 << pow];
+    for (int i = 0; i < sig.length; i++) {
+      fftSig[i].re = sig[i];
+      fftSig[i].im = 0;
+    }
+    return fft(fftSig);
   }
 
-  // TODO
   public static Complex[] fft(final int[] sig, int pow) {
-    final int[] fftSig = new int[1 << pow];
-    System.arraycopy(sig, 0, fftSig, 0, sig.length);
-
-    return new Complex[0];
+    final Complex[] fftSig = new Complex[1 << pow];
+    for (int i = 0; i < sig.length; i++) {
+      fftSig[i].re = sig[i];
+      fftSig[i].im = 0;
+    }
+    return fft(fftSig);
   }
 
   // TODO
-  private static Complex[] ifft(Complex[] convoFft) {
+  private static Complex[] fft(final Complex[] input) {
     return new Complex[0];
+  }
+
+  private static Complex[] ifft(Complex[] input) {
+    for (Complex c : input) {
+      c.conjugate();
+    }
+    final Complex[] output = fft(input);
+    for (int i = 0; i < input.length; i++) {
+      output[i].re /= input.length;
+      output[i].im /= input.length;
+    }
+    return output;
   }
 
   private static class Complex {
     private double re;
     private double im;
 
-    public Complex(double re, double im) {
+    Complex(double re, double im) {
       this.re = re;
       this.im = im;
     }
 
-    public Complex prod(Complex other) {
+    Complex prod(Complex other) {
       final double re = this.re * other.re - im * other.im;
       final double im = this.im * other.re + this.re * other.im;
       return new Complex(re, im);
+    }
+
+    void conjugate() {
+      im = -im;
     }
   }
 
