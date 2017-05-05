@@ -36,25 +36,8 @@ public class ImpulseResponse {
     return new ImpulseResponse(ir);
   }
 
-  private int[] res = new int[0];
-
   public int[] convo(final short[] sig) {
-    int siglen = sig.length;
-    int implen = impulseRes.length;
-    if (res.length != siglen + implen - 1) {
-      res = new int[siglen + implen - 1];
-    } else {
-      for (int i = 0; i < res.length; i++) {
-        res[i] = 0;
-      }
-    }
-    for (int i = 0; i < implen; i++) {
-      int ir = impulseRes[i];
-      for (int j = 0; j < siglen; j++) {
-        res[i + j] += sig[j] * ir;
-      }
-    }
-    return res;
+    return CalcUtil.convoFFT(sig, this);
   }
 
   public Callable<int[]> callableConvo(final short[] sig) {

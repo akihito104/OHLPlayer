@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
  */
 
 public class CalcUtil {
+  private static final String TAG = CalcUtil.class.getSimpleName();
   private static final int FFT_RADIX = 4;
 
   public static int[] convoFFT(@NonNull final short[] signal, @NonNull final ImpulseResponse ir) {
@@ -27,8 +28,9 @@ public class CalcUtil {
   }
 
   private static int calcFFTSize(int resSize) {
-    return (1 << (int) (Math.log10(FFT_RADIX) / Math.log10(2)))
-        << (int) (Math.log10(resSize) / Math.log10(FFT_RADIX) + 1);
+    final int radix = (int) (Math.log10(FFT_RADIX) / Math.log10(2));
+    final int shift = (int) (Math.log10(resSize) / Math.log10(FFT_RADIX) + 1);
+    return (int) Math.pow(2, radix * shift);
   }
 
   public static Complex[] fft(final short[] sig, int fftSize) {
@@ -57,33 +59,56 @@ public class CalcUtil {
 
   private static final Complex[] wq = new Complex[]{
       new Complex(1, 0),
-      new Complex(0, 1),
+      new Complex(0, -1),
       new Complex(-1, 0),
-      new Complex(0, -1)
+      new Complex(0, 1)
   };
 
   // TODO
   private static Complex[] fft(final Complex[] input) {
-    Complex[] out = new Complex[input.length];
-    System.arraycopy(input, 0, out, 0, out.length);
-    for (int n = out.length / FFT_RADIX; n >= 1; n /= FFT_RADIX) {
-      for (int m = 0; m < out.length; m += (n * FFT_RADIX)) {
+    final Complex[] out = new Complex[input.length];
+    System.arraycopy(input, 0, out, 0, input.length);
+    final Complex[] mid = new Complex[out.length];
 
-        for (int p = 0; p < n; p++) {
-          for (int q = 0; q < FFT_RADIX; q++) {
-            Complex w = Complex.exp(-2 * Math.PI * p * q / (n * FFT_RADIX));
+    for (int P = out.length / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
+      final int PQ = P * FFT_RADIX;
+      for (int offset = 0; offset < out.length; offset += PQ) {
+        for (int p = 0; p < P; p++) {
+          for (int r = 0; r < FFT_RADIX; r++) {
+            Complex w = Complex.exp(-2 * Math.PI * p * r / PQ);
             Complex s = new Complex();
-            for (int r = 0; r < FFT_RADIX; r++) {
-              s.add(out[m + r * n + p].prod(wq[(r * q) % FFT_RADIX]));
+            for (int q = 0; q < FFT_RADIX; q++) {
+              s.add(out[offset + q * P + p].prod(wq[(q * r) % FFT_RADIX]));
             }
-            out[m + q * n + p].add(w.prod(s));
+            mid[r * P + p] = w.prod(s);
           }
         }
-
+        System.arraycopy(mid, 0, out, offset, PQ);
       }
     }
 
+    for (int j = 1; j < out.length; j++) {
+      int i = reverse(out.length, j);
+      if (j < i) {
+        final Complex temp = out[j];
+        out[j] = out[i];
+        out[i] = temp;
+      }
+    }
     return out;
+  }
+
+  private static int reverse(int size, int i) {
+    int reverse = 0;
+    int k = i;
+    int j = size / FFT_RADIX;
+    while (j > 0) {
+      reverse *= FFT_RADIX;
+      reverse += k % FFT_RADIX;
+      k /= FFT_RADIX;
+      j /= FFT_RADIX;
+    }
+    return reverse;
   }
 
   private static Complex[] ifft(Complex[] input) {
@@ -99,21 +124,21 @@ public class CalcUtil {
   }
 
   public static class Complex {
-    private double re;
-    private double im;
+    private float re;
+    private float im;
 
     Complex() {
       this(0, 0);
     }
 
-    Complex(double re, double im) {
+    Complex(float re, float im) {
       this.re = re;
       this.im = im;
     }
 
     Complex prod(Complex other) {
-      final double re = this.re * other.re - im * other.im;
-      final double im = this.im * other.re + this.re * other.im;
+      final float re = this.re * other.re - this.im * other.im;
+      final float im = this.im * other.re + this.re * other.im;
       return new Complex(re, im);
     }
 
@@ -132,9 +157,17 @@ public class CalcUtil {
     }
 
     public static Complex exp(double radix) {
-      final double re = Math.cos(radix);
-      final double im = Math.sin(radix);
+      final float re = (float) Math.cos(radix);
+      final float im = (float) Math.sin(radix);
       return new Complex(re, im);
+    }
+
+    public float getReal() {
+      return re;
+    }
+
+    public float getImag() {
+      return im;
     }
   }
 
