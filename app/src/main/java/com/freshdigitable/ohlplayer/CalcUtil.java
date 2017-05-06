@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
  */
 
 public class CalcUtil {
+  @SuppressWarnings("unused")
   private static final String TAG = CalcUtil.class.getSimpleName();
   private static final int FFT_RADIX = 4;
 
@@ -69,18 +70,18 @@ public class CalcUtil {
     final Complex[] out = new Complex[input.length];
     System.arraycopy(input, 0, out, 0, input.length);
     final Complex[] mid = new Complex[out.length];
+    final Complex s = new Complex();
 
     for (int P = out.length / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
       final int PQ = P * FFT_RADIX;
       for (int offset = 0; offset < out.length; offset += PQ) {
         for (int p = 0; p < P; p++) {
           for (int r = 0; r < FFT_RADIX; r++) {
-            Complex w = Complex.exp(-2 * Math.PI * p * r / PQ);
-            Complex s = new Complex();
+            s.clear();
             for (int q = 0; q < FFT_RADIX; q++) {
               s.add(out[offset + q * P + p].prod(wq[(q * r) % FFT_RADIX]));
             }
-            mid[r * P + p] = w.prod(s);
+            mid[r * P + p] = Complex.exp(-2 * Math.PI * p * r / PQ).productedBy(s);
           }
         }
         System.arraycopy(mid, 0, out, offset, PQ);
@@ -124,22 +125,30 @@ public class CalcUtil {
   }
 
   public static class Complex {
-    private float re;
-    private float im;
+    private double re;
+    private double im;
 
     Complex() {
       this(0, 0);
     }
 
-    Complex(float re, float im) {
+    Complex(double re, double im) {
       this.re = re;
       this.im = im;
     }
 
     Complex prod(Complex other) {
-      final float re = this.re * other.re - this.im * other.im;
-      final float im = this.im * other.re + this.re * other.im;
+      final double re = this.re * other.re - this.im * other.im;
+      final double im = this.im * other.re + this.re * other.im;
       return new Complex(re, im);
+    }
+
+    Complex productedBy(Complex other) {
+      final double re = this.re * other.re - this.im * other.im;
+      final double im = this.im * other.re + this.re * other.im;
+      this.re = re;
+      this.im = im;
+      return this;
     }
 
     void add(Complex adder) {
@@ -157,17 +166,22 @@ public class CalcUtil {
     }
 
     public static Complex exp(double radix) {
-      final float re = (float) Math.cos(radix);
-      final float im = (float) Math.sin(radix);
+      final double re = Math.cos(radix);
+      final double im = Math.sin(radix);
       return new Complex(re, im);
     }
 
-    public float getReal() {
+    public double getReal() {
       return re;
     }
 
-    public float getImag() {
+    public double getImag() {
       return im;
+    }
+
+    public void clear() {
+      re = 0;
+      im = 0;
     }
   }
 
