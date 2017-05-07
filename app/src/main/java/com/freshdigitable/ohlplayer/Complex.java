@@ -35,7 +35,7 @@ public class Complex {
     this.im += adder.im;
   }
 
-  void devideScaler(double d) {
+  void devideScalar(double d) {
     this.re /= d;
     this.im /= d;
   }

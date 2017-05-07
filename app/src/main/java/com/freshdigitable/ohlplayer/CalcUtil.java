@@ -14,16 +14,19 @@ public class CalcUtil {
   public static int[] convoFFT(@NonNull final short[] signal, @NonNull final ImpulseResponse ir) {
     final int resSize = signal.length + ir.getSize() - 1;
     final int fftSize = calcFFTSize(resSize);
-    final Complex[] sigFft = fft(signal, fftSize);
-    final Complex[] irFft = fft(ir.getImpulseResponce(), fftSize);
-    Complex[] convoFft = new Complex[fftSize];
-    for (int i = 0; i < fftSize; i++) {
-      convoFft[i] = sigFft[i].prod(irFft[i]);
-    }
-    Complex[] resComp = ifft(convoFft);
-    int[] res = new int[resSize];
+    final ComplexArray sigFft = fft(signal, fftSize);
+    final ComplexArray irFft = fft(ir.getImpulseResponce(), fftSize);
+    return convoFFT(sigFft, irFft);
+  }
+
+  static int[] convoFFT(@NonNull ComplexArray signal, @NonNull ComplexArray hrtf) {
+    final ComplexArray convoFft = ComplexArray.productAll(signal, hrtf);
+    final ComplexArray resComp = ifft(convoFft);
+    final double[] resDouble = resComp.getReal();
+    final int resSize = signal.size();
+    final int[] res = new int[resSize];
     for (int i = 0; i < resSize; i++) {
-      res[i] = (int) resComp[i].getReal();
+      res[i] = (int) resDouble[i];
     }
     return res;
   }
@@ -34,25 +37,13 @@ public class CalcUtil {
     return (int) Math.pow(2, radix * shift);
   }
 
-  public static Complex[] fft(final short[] sig, int fftSize) {
-    final Complex[] fftSig = new Complex[fftSize];
-    for (int i = 0; i < sig.length; i++) {
-      fftSig[i] = new Complex(sig[i], 0);
-    }
-    for (int i = sig.length; i < fftSize; i++) {
-      fftSig[i] = new Complex();
-    }
+  public static ComplexArray fft(final short[] sig, int fftSize) {
+    final ComplexArray fftSig = new ComplexArray(sig, fftSize);
     return fft(fftSig);
   }
 
-  public static Complex[] fft(final int[] sig, int fftSize) {
-    final Complex[] fftSig = new Complex[fftSize];
-    for (int i = 0; i < sig.length; i++) {
-      fftSig[i] = new Complex(sig[i], 0);
-    }
-    for (int i = sig.length; i < fftSize; i++) {
-      fftSig[i] = new Complex();
-    }
+  public static ComplexArray fft(final int[] sig, int fftSize) {
+    final ComplexArray fftSig = new ComplexArray(sig, fftSize);
     return fft(fftSig);
   }
 
@@ -64,34 +55,32 @@ public class CalcUtil {
   };
 
   // TODO
-  private static Complex[] fft(final Complex[] out) {
-//    final Complex[] out = new Complex[input.length];
-//    System.arraycopy(input, 0, out, 0, input.length);
-    final Complex[] mid = new Complex[out.length];
-    final Complex s = new Complex();
+  private static ComplexArray fft(final ComplexArray out) {
+    final int size = out.size();
+    final ComplexArray mid = new ComplexArray(size);
 
-    for (int P = out.length / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
+    for (int P = size / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
       final int PQ = P * FFT_RADIX;
-      for (int offset = 0; offset < out.length; offset += PQ) {
+      for (int offset = 0; offset < size; offset += PQ) {
         for (int p = 0; p < P; p++) {
           for (int r = 0; r < FFT_RADIX; r++) {
-            s.clear();
             for (int q = 0; q < FFT_RADIX; q++) {
-              s.add(out[offset + q * P + p].prod(wq[(q * r) % FFT_RADIX]));
+              double re = out.prodReal(offset + q * P + p, wq[(q * r) % FFT_RADIX]);
+              double im = out.prodImag(offset + q * P + p, wq[(q * r) % FFT_RADIX]);
+              mid.add(r * P + p, re, im);
             }
-            mid[r * P + p] = Complex.exp(-2 * Math.PI * p * r / PQ).productedBy(s);
+            mid.prodExp(r * P + p, -2 * Math.PI * p * r / PQ);
           }
         }
-        System.arraycopy(mid, 0, out, offset, PQ);
+        out.copyFrom(mid, 0, offset, PQ);
+        mid.clear();
       }
     }
 
-    for (int j = 1; j < out.length; j++) {
-      int i = reverse(out.length, j);
+    for (int j = 1; j < size; j++) {
+      int i = reverse(size, j);
       if (j < i) {
-        final Complex temp = out[j];
-        out[j] = out[i];
-        out[i] = temp;
+        out.swap(i, j);
       }
     }
     return out;
@@ -110,14 +99,10 @@ public class CalcUtil {
     return reverse;
   }
 
-  private static Complex[] ifft(Complex[] input) {
-    for (Complex c : input) {
-      c.conjugate();
-    }
-    final Complex[] output = fft(input);
-    for (int i = 0; i < input.length; i++) {
-      output[i].devideScaler(input.length);
-    }
+  private static ComplexArray ifft(ComplexArray input) {
+    input.conjugate();
+    final ComplexArray output = fft(input);
+    output.divideAllWithScalar(output.size());
     return output;
   }
 

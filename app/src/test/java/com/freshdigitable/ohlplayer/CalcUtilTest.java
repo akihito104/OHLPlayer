@@ -3,8 +3,6 @@ package com.freshdigitable.ohlplayer;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -39,15 +37,15 @@ public class CalcUtilTest {
   @Test
   public void testFFT() throws Exception {
     final long start = System.nanoTime();
-    final Complex[] actual = CalcUtil.fft(input, input.length);
+    final ComplexArray actual = CalcUtil.fft(input, input.length);
     final long end = System.nanoTime();
 
-    assertThat(actual.length, is(expected.length));
-    final String message = Arrays.toString(actual);
+    assertThat(actual.size(), is(expected.length));
+    final String message = actual.toString();
     for (int i = 0; i < expected.length; i++) {
-      final double diffReal = Math.abs(actual[i].getReal() - expected[i].getReal());
+      final double diffReal = Math.abs(actual.getReal()[i] - expected[i].getReal());
       assertTrue(message, diffReal < 10e-5);
-      final double diffImag = Math.abs(actual[i].getImag() - expected[i].getImag());
+      final double diffImag = Math.abs(actual.getImag()[i] - expected[i].getImag());
       assertTrue(message, diffImag < 10e-5);
     }
     final long actualElapse = end - start;
