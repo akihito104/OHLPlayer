@@ -1,7 +1,5 @@
 package com.freshdigitable.ohlplayer;
 
-import com.freshdigitable.ohlplayer.CalcUtil.Complex;
-
 import org.junit.Before;
 import org.junit.Test;
 

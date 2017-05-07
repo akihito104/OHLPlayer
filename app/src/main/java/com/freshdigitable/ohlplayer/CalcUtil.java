@@ -23,7 +23,7 @@ public class CalcUtil {
     Complex[] resComp = ifft(convoFft);
     int[] res = new int[resSize];
     for (int i = 0; i < resSize; i++) {
-      res[i] = (int) resComp[i].re;
+      res[i] = (int) resComp[i].getReal();
     }
     return res;
   }
@@ -36,24 +36,22 @@ public class CalcUtil {
 
   public static Complex[] fft(final short[] sig, int fftSize) {
     final Complex[] fftSig = new Complex[fftSize];
-    for (int i = 0; i < fftSize; i++) {
-      fftSig[i] = new Complex();
-    }
     for (int i = 0; i < sig.length; i++) {
-      fftSig[i].re = sig[i];
-      fftSig[i].im = 0;
+      fftSig[i] = new Complex(sig[i], 0);
+    }
+    for (int i = sig.length; i < fftSize; i++) {
+      fftSig[i] = new Complex();
     }
     return fft(fftSig);
   }
 
   public static Complex[] fft(final int[] sig, int fftSize) {
     final Complex[] fftSig = new Complex[fftSize];
-    for (int i = 0; i < fftSize; i++) {
-      fftSig[i] = new Complex();
-    }
     for (int i = 0; i < sig.length; i++) {
-      fftSig[i].re = sig[i];
-      fftSig[i].im = 0;
+      fftSig[i] = new Complex(sig[i], 0);
+    }
+    for (int i = sig.length; i < fftSize; i++) {
+      fftSig[i] = new Complex();
     }
     return fft(fftSig);
   }
@@ -66,9 +64,9 @@ public class CalcUtil {
   };
 
   // TODO
-  private static Complex[] fft(final Complex[] input) {
-    final Complex[] out = new Complex[input.length];
-    System.arraycopy(input, 0, out, 0, input.length);
+  private static Complex[] fft(final Complex[] out) {
+//    final Complex[] out = new Complex[input.length];
+//    System.arraycopy(input, 0, out, 0, input.length);
     final Complex[] mid = new Complex[out.length];
     final Complex s = new Complex();
 
@@ -118,71 +116,9 @@ public class CalcUtil {
     }
     final Complex[] output = fft(input);
     for (int i = 0; i < input.length; i++) {
-      output[i].re /= input.length;
-      output[i].im /= input.length;
+      output[i].devideScaler(input.length);
     }
     return output;
-  }
-
-  public static class Complex {
-    private double re;
-    private double im;
-
-    Complex() {
-      this(0, 0);
-    }
-
-    Complex(double re, double im) {
-      this.re = re;
-      this.im = im;
-    }
-
-    Complex prod(Complex other) {
-      final double re = this.re * other.re - this.im * other.im;
-      final double im = this.im * other.re + this.re * other.im;
-      return new Complex(re, im);
-    }
-
-    Complex productedBy(Complex other) {
-      final double re = this.re * other.re - this.im * other.im;
-      final double im = this.im * other.re + this.re * other.im;
-      this.re = re;
-      this.im = im;
-      return this;
-    }
-
-    void add(Complex adder) {
-      this.re += adder.re;
-      this.im += adder.im;
-    }
-
-    void conjugate() {
-      im = -im;
-    }
-
-    @Override
-    public String toString() {
-      return re + " + " + im + " i";
-    }
-
-    public static Complex exp(double radix) {
-      final double re = Math.cos(radix);
-      final double im = Math.sin(radix);
-      return new Complex(re, im);
-    }
-
-    public double getReal() {
-      return re;
-    }
-
-    public double getImag() {
-      return im;
-    }
-
-    public void clear() {
-      re = 0;
-      im = 0;
-    }
   }
 
   private CalcUtil() {}
