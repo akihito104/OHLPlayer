@@ -16,16 +16,15 @@ public class CalcUtil {
     final int fftSize = calcFFTSize(resSize);
     final ComplexArray sigFft = fft(signal, fftSize);
     final ComplexArray irFft = fft(ir.getImpulseResponce(), fftSize);
-    return convoFFT(sigFft, irFft);
+    return convoFFT(sigFft, irFft, resSize);
   }
 
-  static int[] convoFFT(@NonNull ComplexArray signal, @NonNull ComplexArray hrtf) {
+  static int[] convoFFT(@NonNull ComplexArray signal, @NonNull ComplexArray hrtf, int outSize) {
     final ComplexArray convoFft = ComplexArray.productAll(signal, hrtf);
     final ComplexArray resComp = ifft(convoFft);
     final double[] resDouble = resComp.getReal();
-    final int resSize = signal.size();
-    final int[] res = new int[resSize];
-    for (int i = 0; i < resSize; i++) {
+    final int[] res = new int[outSize];
+    for (int i = 0; i < outSize; i++) {
       res[i] = (int) resDouble[i];
     }
     return res;
@@ -47,14 +46,6 @@ public class CalcUtil {
     return fft(fftSig);
   }
 
-  private static final Complex[] wq = new Complex[]{
-      new Complex(1, 0),
-      new Complex(0, -1),
-      new Complex(-1, 0),
-      new Complex(0, 1)
-  };
-
-  // TODO
   private static ComplexArray fft(final ComplexArray out) {
     final int size = out.size();
     final ComplexArray mid = new ComplexArray(size);
@@ -63,18 +54,22 @@ public class CalcUtil {
       final int PQ = P * FFT_RADIX;
       for (int offset = 0; offset < size; offset += PQ) {
         for (int p = 0; p < P; p++) {
+          final int p1 = p + offset;
+          mid.setReAt(        p1, out.reAt(p1) + out.reAt(P + p1) + out.reAt(2 * P + p1) + out.reAt(3 * P + p1));
+          mid.setImAt(        p1, out.imAt(p1) + out.imAt(P + p1) + out.imAt(2 * P + p1) + out.imAt(3 * P + p1));
+          mid.setReAt(    P + p1, out.reAt(p1) + out.imAt(P + p1) - out.reAt(2 * P + p1) - out.imAt(3 * P + p1));
+          mid.setImAt(    P + p1, out.imAt(p1) - out.reAt(P + p1) - out.imAt(2 * P + p1) + out.reAt(3 * P + p1));
+          mid.setReAt(2 * P + p1, out.reAt(p1) - out.reAt(P + p1) + out.reAt(2 * P + p1) - out.reAt(3 * P + p1));
+          mid.setImAt(2 * P + p1, out.imAt(p1) - out.imAt(P + p1) + out.imAt(2 * P + p1) - out.imAt(3 * P + p1));
+          mid.setReAt(3 * P + p1, out.reAt(p1) - out.imAt(P + p1) - out.reAt(2 * P + p1) + out.imAt(3 * P + p1));
+          mid.setImAt(3 * P + p1, out.imAt(p1) + out.reAt(P + p1) - out.imAt(2 * P + p1) - out.reAt(3 * P + p1));
           for (int r = 0; r < FFT_RADIX; r++) {
-            for (int q = 0; q < FFT_RADIX; q++) {
-              double re = out.prodReal(offset + q * P + p, wq[(q * r) % FFT_RADIX]);
-              double im = out.prodImag(offset + q * P + p, wq[(q * r) % FFT_RADIX]);
-              mid.add(r * P + p, re, im);
-            }
-            mid.prodExp(r * P + p, -2 * Math.PI * p * r / PQ);
+            mid.prodExp(r * P + p1, -2 * Math.PI * p * r / PQ);
           }
         }
-        out.copyFrom(mid, 0, offset, PQ);
-        mid.clear();
       }
+      out.copyFrom(mid, 0, 0, size);
+      mid.clear();
     }
 
     for (int j = 1; j < size; j++) {

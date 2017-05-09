@@ -47,6 +47,22 @@ public class ComplexArray {
     return real;
   }
 
+  void setReAt(int index, double value) {
+    real[index] = value;
+  }
+
+  double reAt(int index) {
+    return real[index];
+  }
+
+  void setImAt(int index, double value) {
+    imag[index] = value;
+  }
+
+  double imAt(int index) {
+    return imag[index];
+  }
+
   public void swap(int i, int j) {
     double re = real[i];
     double im = imag[i];
@@ -69,25 +85,12 @@ public class ComplexArray {
     }
   }
 
-  public double prodReal(int i, Complex c) {
-    return prodReal(i, c.getReal(), c.getImag());
-  }
-
   double prodReal(int i, double re, double im) {
     return this.real[i] * re - this.imag[i] * im;
   }
 
-  double prodImag(int i, Complex c) {
-    return prodImag(i, c.getReal(), c.getImag());
-  }
-
   double prodImag(int i, double re, double im) {
     return this.real[i] * im + this.imag[i] * re;
-  }
-
-  public void add(int i, double re, double im) {
-    this.real[i] += re;
-    this.imag[i] += im;
   }
 
   public void prodExp(int i, double radix) {
