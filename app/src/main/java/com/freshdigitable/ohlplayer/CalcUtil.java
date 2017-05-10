@@ -30,7 +30,7 @@ public class CalcUtil {
     return res;
   }
 
-  private static int calcFFTSize(int resSize) {
+  static int calcFFTSize(int resSize) {
     final int radix = (int) (Math.log10(FFT_RADIX) / Math.log10(2));
     final int shift = (int) (Math.log10(resSize) / Math.log10(FFT_RADIX) + 1);
     return (int) Math.pow(2, radix * shift);
@@ -48,28 +48,34 @@ public class CalcUtil {
 
   private static ComplexArray fft(final ComplexArray out) {
     final int size = out.size();
-    final ComplexArray mid = new ComplexArray(size);
 
     for (int P = size / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
       final int PQ = P * FFT_RADIX;
       for (int offset = 0; offset < size; offset += PQ) {
         for (int p = 0; p < P; p++) {
           final int p1 = p + offset;
-          mid.setReAt(        p1, out.reAt(p1) + out.reAt(P + p1) + out.reAt(2 * P + p1) + out.reAt(3 * P + p1));
-          mid.setImAt(        p1, out.imAt(p1) + out.imAt(P + p1) + out.imAt(2 * P + p1) + out.imAt(3 * P + p1));
-          mid.setReAt(    P + p1, out.reAt(p1) + out.imAt(P + p1) - out.reAt(2 * P + p1) - out.imAt(3 * P + p1));
-          mid.setImAt(    P + p1, out.imAt(p1) - out.reAt(P + p1) - out.imAt(2 * P + p1) + out.reAt(3 * P + p1));
-          mid.setReAt(2 * P + p1, out.reAt(p1) - out.reAt(P + p1) + out.reAt(2 * P + p1) - out.reAt(3 * P + p1));
-          mid.setImAt(2 * P + p1, out.imAt(p1) - out.imAt(P + p1) + out.imAt(2 * P + p1) - out.imAt(3 * P + p1));
-          mid.setReAt(3 * P + p1, out.reAt(p1) - out.imAt(P + p1) - out.reAt(2 * P + p1) + out.imAt(3 * P + p1));
-          mid.setImAt(3 * P + p1, out.imAt(p1) + out.reAt(P + p1) - out.imAt(2 * P + p1) - out.reAt(3 * P + p1));
+          final double o0Re = out.reAt(p1);
+          final double o0Im = out.imAt(p1);
+          final double o1Re = out.reAt(P + p1);
+          final double o1Im = out.imAt(P + p1);
+          final double o2Re = out.reAt(2 * P + p1);
+          final double o2Im = out.imAt(2 * P + p1);
+          final double o3Re = out.reAt(3 * P + p1);
+          final double o3Im = out.imAt(3 * P + p1);
+          out.setReAt(        p1, o0Re + o1Re + o2Re + o3Re);
+          out.setImAt(        p1, o0Im + o1Im + o2Im + o3Im);
+          out.setReAt(    P + p1, o0Re + o1Im - o2Re - o3Im);
+          out.setImAt(    P + p1, o0Im - o1Re - o2Im + o3Re);
+          out.setReAt(2 * P + p1, o0Re - o1Re + o2Re - o3Re);
+          out.setImAt(2 * P + p1, o0Im - o1Im + o2Im - o3Im);
+          out.setReAt(3 * P + p1, o0Re - o1Im - o2Re + o3Im);
+          out.setImAt(3 * P + p1, o0Im + o1Re - o2Im - o3Re);
+          final double omega = -2 * Math.PI * p / PQ;
           for (int r = 0; r < FFT_RADIX; r++) {
-            mid.prodExp(r * P + p1, -2 * Math.PI * p * r / PQ);
+            out.prodExp(r * P + p1, omega * r);
           }
         }
       }
-      out.copyFrom(mid, 0, 0, size);
-      mid.clear();
     }
 
     for (int j = 1; j < size; j++) {

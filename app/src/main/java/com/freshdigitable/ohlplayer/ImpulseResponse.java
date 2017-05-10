@@ -49,6 +49,24 @@ public class ImpulseResponse {
     };
   }
 
+  private ComplexArray cache = new ComplexArray(0);
+
+  public int[] convo(final ComplexArray sig, int outSize) {
+    if (cache.size() != sig.size()) {
+      cache = CalcUtil.fft(impulseRes, sig.size());
+    }
+    return CalcUtil.convoFFT(cache, sig, outSize);
+  }
+
+  public Callable<int[]> callableConvo(final ComplexArray sig, final int outSize) {
+    return new Callable<int[]>() {
+      @Override
+      public int[] call() throws Exception {
+        return convo(sig, outSize);
+      }
+    };
+  }
+
   private ImpulseResponse(int[] ir) {
     this.impulseRes = ir;
   }
