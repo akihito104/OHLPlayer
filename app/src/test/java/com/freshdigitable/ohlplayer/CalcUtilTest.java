@@ -37,7 +37,7 @@ public class CalcUtilTest {
   @Test
   public void testFFT() throws Exception {
     final long start = System.nanoTime();
-    final ComplexArray actual = CalcUtil.fft(input, input.length);
+    final ComplexArray actual = ComplexArray.calcFFT(input, input.length);
     final long end = System.nanoTime();
 
     assertThat(actual.size(), is(expected.length));

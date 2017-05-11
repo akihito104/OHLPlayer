@@ -11,6 +11,7 @@ public class CalcUtil {
   private static final String TAG = CalcUtil.class.getSimpleName();
   private static final int FFT_RADIX = 4;
 
+  @Deprecated
   public static int[] convoFFT(@NonNull final short[] signal, @NonNull final ImpulseResponse ir) {
     final int resSize = signal.length + ir.getSize() - 1;
     final int fftSize = calcFFTSize(resSize);
@@ -19,10 +20,11 @@ public class CalcUtil {
     return convoFFT(sigFft, irFft, resSize);
   }
 
+  @Deprecated
   static int[] convoFFT(@NonNull ComplexArray signal, @NonNull ComplexArray hrtf, int outSize) {
     final ComplexArray convoFft = ComplexArray.productAll(signal, hrtf);
-    final ComplexArray resComp = ifft(convoFft);
-    final double[] resDouble = resComp.getReal();
+    convoFft.ifft();
+    final double[] resDouble = convoFft.getReal();
     final int[] res = new int[outSize];
     for (int i = 0; i < outSize; i++) {
       res[i] = (int) resDouble[i];
@@ -36,16 +38,19 @@ public class CalcUtil {
     return (int) Math.pow(2, radix * shift);
   }
 
+  @Deprecated
   public static ComplexArray fft(final short[] sig, int fftSize) {
     final ComplexArray fftSig = new ComplexArray(sig, fftSize);
     return fft(fftSig);
   }
 
+  @Deprecated
   public static ComplexArray fft(final int[] sig, int fftSize) {
     final ComplexArray fftSig = new ComplexArray(sig, fftSize);
     return fft(fftSig);
   }
 
+  @Deprecated
   private static ComplexArray fft(final ComplexArray out) {
     final int size = out.size();
 

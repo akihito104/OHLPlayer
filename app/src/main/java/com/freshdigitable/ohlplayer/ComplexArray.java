@@ -29,18 +29,115 @@ public class ComplexArray {
     }
   }
 
+  private static final int FFT_RADIX = 4;
+
+  static ComplexArray calcFFT(short[] sig, int fftSize) {
+    final ComplexArray res = new ComplexArray(sig, fftSize);
+    res.fft();
+    return res;
+  }
+
+  static ComplexArray calcFFT(int[] sig, int fftSize) {
+    final ComplexArray res = new ComplexArray(sig, fftSize);
+    res.fft();
+    return res;
+  }
+
+  void fft() {
+    for (int P = size / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
+      final int PQ = P * FFT_RADIX;
+      for (int offset = 0; offset < size; offset += PQ) {
+        for (int p = 0; p < P; p++) {
+          final int p1 = p + offset;
+          final double o0Re = real[p1];
+          final double o0Im = imag[p1];
+          final double o1Re = real[P + p1];
+          final double o1Im = imag[P + p1];
+          final double o2Re = real[2 * P + p1];
+          final double o2Im = imag[2 * P + p1];
+          final double o3Re = real[3 * P + p1];
+          final double o3Im = imag[3 * P + p1];
+          real[p1] = o0Re + o1Re + o2Re + o3Re;
+          imag[p1] = o0Im + o1Im + o2Im + o3Im;
+          real[P + p1] = o0Re + o1Im - o2Re - o3Im;
+          imag[P + p1] = o0Im - o1Re - o2Im + o3Re;
+          real[2 * P + p1] = o0Re - o1Re + o2Re - o3Re;
+          imag[2 * P + p1] = o0Im - o1Im + o2Im - o3Im;
+          real[3 * P + p1] = o0Re - o1Im - o2Re + o3Im;
+          imag[3 * P + p1] = o0Im + o1Re - o2Im - o3Re;
+          final double omega = -2 * Math.PI * p / PQ;
+          for (int r = 0; r < FFT_RADIX; r++) {
+            final double wRe = Math.cos(omega * r);
+            final double wIm = Math.sin(omega * r);
+            double re0 = this.real[r * P + p1];
+            double im0 = this.imag[r * P + p1];
+            final double re = re0 * wRe - im0 * wIm;
+            final double im = re0 * wIm + im0 * wRe;
+            this.real[r * P + p1] = re;
+            this.imag[r * P + p1] = im;
+          }
+        }
+      }
+    }
+
+    for (int j = 1; j < size; j++) {
+      int i = reverse(size, j);
+      if (j < i) {
+        swap(i, j);
+      }
+    }
+  }
+
+  public void prodExp(int i, double radix) {
+    final double wRe = Math.cos(radix);
+    final double wIm = Math.sin(radix);
+    final double re = this.real[i] * wRe - this.imag[i] * wIm;
+    final double im = this.real[i] * wIm + this.imag[i] * wRe;
+    this.real[i] = re;
+    this.imag[i] = im;
+  }
+
+  private static int reverse(int size, int i) {
+    int reverse = 0;
+    int k = i;
+    int j = size / FFT_RADIX;
+    while (j > 0) {
+      reverse *= FFT_RADIX;
+      reverse += k % FFT_RADIX;
+      k /= FFT_RADIX;
+      j /= FFT_RADIX;
+    }
+    return reverse;
+  }
+
   int size() {
     return size;
   }
 
-  public static ComplexArray productAll(ComplexArray a, ComplexArray b) {
-    final ComplexArray res = new ComplexArray(a.size());
-    final int size = res.size();
+  void ifft() {
+    conjugate();
+    fft();
     for (int i = 0; i < size; i++) {
-      res.real[i] = a.real[i] * b.real[i] - a.imag[i] * b.imag[i];
-      res.imag[i] = a.imag[i] * b.real[i] + a.real[i] * b.imag[i];
+      real[i] /= size;
+//      imag[i] /= size; // whole of imag values are nearly 0
     }
-    return res;
+  }
+
+  void product(ComplexArray a, ComplexArray b) {
+    productAll(this, a, b);
+  }
+
+  public static ComplexArray productAll(ComplexArray a, ComplexArray b) {
+    return productAll(new ComplexArray(a.size()), a, b);
+  }
+
+  public static ComplexArray productAll(ComplexArray p, ComplexArray a, ComplexArray b) {
+    final int size = p.size();
+    for (int i = 0; i < size; i++) {
+      p.real[i] = a.real[i] * b.real[i] - a.imag[i] * b.imag[i];
+      p.imag[i] = a.imag[i] * b.real[i] + a.real[i] * b.imag[i];
+    }
+    return p;
   }
 
   public double[] getReal() {
@@ -73,7 +170,7 @@ public class ComplexArray {
   }
 
   public void conjugate() {
-    for (int i = 0; i < imag.length; i++) {
+    for (int i = 0; i < size; i++) {
       imag[i] = -imag[i];
     }
   }
@@ -83,28 +180,6 @@ public class ComplexArray {
       real[i] /= scalar;
       imag[i] /= scalar;
     }
-  }
-
-  double prodReal(int i, double re, double im) {
-    return this.real[i] * re - this.imag[i] * im;
-  }
-
-  double prodImag(int i, double re, double im) {
-    return this.real[i] * im + this.imag[i] * re;
-  }
-
-  public void prodExp(int i, double radix) {
-    final double wRe = Math.cos(radix);
-    final double wIm = Math.sin(radix);
-    final double re = prodReal(i, wRe, wIm);
-    final double im = prodImag(i, wRe, wIm);
-    this.real[i] = re;
-    this.imag[i] = im;
-  }
-
-  public void copyFrom(ComplexArray src, int srcFrom, int distFrom, int length) {
-    System.arraycopy(src.getReal(), srcFrom, real, distFrom, length);
-    System.arraycopy(src.getImag(), srcFrom, imag, distFrom, length);
   }
 
   public double[] getImag() {
@@ -118,12 +193,5 @@ public class ComplexArray {
       sb.append(real[i]).append(" + ").append(imag[i]).append(", ");
     }
     return sb.toString();
-  }
-
-  public void clear() {
-    for (int i = 0; i < size; i++) {
-      this.real[i] = 0;
-      this.imag[i] = 0;
-    }
   }
 }

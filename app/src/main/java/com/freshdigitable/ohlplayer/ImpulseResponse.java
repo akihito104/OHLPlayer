@@ -49,13 +49,25 @@ public class ImpulseResponse {
     };
   }
 
+  private ComplexArray hrtf = new ComplexArray(0);
   private ComplexArray cache = new ComplexArray(0);
+  private int[] res = new int[0];
 
   public int[] convo(final ComplexArray sig, int outSize) {
-    if (cache.size() != sig.size()) {
-      cache = CalcUtil.fft(impulseRes, sig.size());
+    if (hrtf.size() != sig.size()) {
+      hrtf = ComplexArray.calcFFT(impulseRes, sig.size());
+      cache = new ComplexArray(sig.size());
     }
-    return CalcUtil.convoFFT(cache, sig, outSize);
+    if (res.length != outSize) {
+      res = new int[outSize];
+    }
+    cache.product(hrtf, sig);
+    cache.ifft();
+    final double[] resDouble = cache.getReal();
+    for (int i = 0; i < outSize; i++) {
+      res[i] = (int) resDouble[i];
+    }
+    return res;
   }
 
   public Callable<int[]> callableConvo(final ComplexArray sig, final int outSize) {
