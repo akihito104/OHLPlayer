@@ -1,5 +1,7 @@
 package com.freshdigitable.ohlplayer;
 
+import java.util.Arrays;
+
 /**
  * Created by akihit on 2017/05/07.
  */
@@ -43,20 +45,32 @@ public class ComplexArray {
     return res;
   }
 
+  void fft(short[] in) {
+    for (int i = 0; i < in.length; i++) {
+      real[i] = in[i];
+    }
+    Arrays.fill(real, in.length, size, 0);
+    Arrays.fill(imag, 0);
+    fft();
+  }
+
   void fft() {
+    int p1;
+    double o0Re, o0Im, o1Re, o1Im, o2Re, o2Im, o3Re, o3Im;
+    double wRe, wIm, re0, im0, re, im, omega;
     for (int P = size / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
       final int PQ = P * FFT_RADIX;
       for (int offset = 0; offset < size; offset += PQ) {
         for (int p = 0; p < P; p++) {
-          final int p1 = p + offset;
-          final double o0Re = real[p1];
-          final double o0Im = imag[p1];
-          final double o1Re = real[P + p1];
-          final double o1Im = imag[P + p1];
-          final double o2Re = real[2 * P + p1];
-          final double o2Im = imag[2 * P + p1];
-          final double o3Re = real[3 * P + p1];
-          final double o3Im = imag[3 * P + p1];
+          p1 = p + offset;
+          o0Re = real[p1];
+          o0Im = imag[p1];
+          o1Re = real[P + p1];
+          o1Im = imag[P + p1];
+          o2Re = real[2 * P + p1];
+          o2Im = imag[2 * P + p1];
+          o3Re = real[3 * P + p1];
+          o3Im = imag[3 * P + p1];
           real[p1] = o0Re + o1Re + o2Re + o3Re;
           imag[p1] = o0Im + o1Im + o2Im + o3Im;
           real[P + p1] = o0Re + o1Im - o2Re - o3Im;
@@ -65,16 +79,16 @@ public class ComplexArray {
           imag[2 * P + p1] = o0Im - o1Im + o2Im - o3Im;
           real[3 * P + p1] = o0Re - o1Im - o2Re + o3Im;
           imag[3 * P + p1] = o0Im + o1Re - o2Im - o3Re;
-          final double omega = -2 * Math.PI * p / PQ;
+          omega = -2 * Math.PI * p / PQ;
           for (int r = 0; r < FFT_RADIX; r++) {
-            final double wRe = Math.cos(omega * r);
-            final double wIm = Math.sin(omega * r);
-            double re0 = this.real[r * P + p1];
-            double im0 = this.imag[r * P + p1];
-            final double re = re0 * wRe - im0 * wIm;
-            final double im = re0 * wIm + im0 * wRe;
-            this.real[r * P + p1] = re;
-            this.imag[r * P + p1] = im;
+            wRe = Math.cos(omega * r);
+            wIm = Math.sin(omega * r);
+            re0 = real[r * P + p1];
+            im0 = imag[r * P + p1];
+            re = re0 * wRe - im0 * wIm;
+            im = re0 * wIm + im0 * wRe;
+            real[r * P + p1] = re;
+            imag[r * P + p1] = im;
           }
         }
       }
@@ -88,7 +102,7 @@ public class ComplexArray {
     }
   }
 
-  public void prodExp(int i, double radix) {
+  void prodExp(int i, double radix) {
     final double wRe = Math.cos(radix);
     final double wIm = Math.sin(radix);
     final double re = this.real[i] * wRe - this.imag[i] * wIm;
@@ -133,10 +147,17 @@ public class ComplexArray {
 
   public static ComplexArray productAll(ComplexArray p, ComplexArray a, ComplexArray b) {
     final int size = p.size();
-    for (int i = 0; i < size; i++) {
+    p.real[0] = a.real[0] * b.real[0] - a.imag[0] * b.imag[0];
+    p.imag[0] = a.imag[0] * b.real[0] + a.real[0] * b.imag[0];
+    int half = size / 2;
+    for (int i = 1; i < half; i++) {
       p.real[i] = a.real[i] * b.real[i] - a.imag[i] * b.imag[i];
       p.imag[i] = a.imag[i] * b.real[i] + a.real[i] * b.imag[i];
+      p.real[size - i] = p.real[i];
+      p.imag[size - i] = -p.imag[i];
     }
+    p.real[half] = a.real[half] * b.real[half] - a.imag[half] * b.imag[half];
+    p.imag[half] = a.imag[half] * b.real[half] + a.real[half] * b.imag[half];
     return p;
   }
 
@@ -170,9 +191,14 @@ public class ComplexArray {
   }
 
   public void conjugate() {
-    for (int i = 0; i < size; i++) {
-      imag[i] = -imag[i];
+    double tmp;
+    imag[0] *= -1;
+    for (int i = 1; i < size / 2; i++) {
+      tmp = imag[i];
+      imag[i] = imag[size - i];
+      imag[size - i] = tmp;
     }
+    imag[size / 2] *= -1;
   }
 
   public void divideAllWithScalar(int scalar) {
