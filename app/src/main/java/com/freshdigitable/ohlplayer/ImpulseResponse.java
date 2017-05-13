@@ -36,19 +36,6 @@ public class ImpulseResponse {
     return new ImpulseResponse(ir);
   }
 
-  public int[] convo(final short[] sig) {
-    return CalcUtil.convoFFT(sig, this);
-  }
-
-  public Callable<int[]> callableConvo(final short[] sig) {
-    return new Callable<int[]>() {
-      @Override
-      public int[] call() throws Exception {
-        return convo(sig);
-      }
-    };
-  }
-
   private ComplexArray hrtf = new ComplexArray(0);
   private ComplexArray cache = new ComplexArray(0);
   private int[] res = new int[0];
@@ -85,9 +72,5 @@ public class ImpulseResponse {
 
   public int getSize() {
     return this.impulseRes.length;
-  }
-
-  public int[] getImpulseResponce() {
-    return impulseRes;
   }
 }

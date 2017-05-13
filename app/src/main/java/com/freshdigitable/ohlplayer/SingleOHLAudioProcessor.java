@@ -107,7 +107,6 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
   private ComplexArray inputFft = new ComplexArray(0);
 
   private void convo(ShortBuffer shortBuffer) {
-    final long start = System.nanoTime();
     final int remaining = shortBuffer.remaining();
     final int inputSize = remaining / 2;
     final short[] inBuf = new short[remaining];
@@ -117,7 +116,7 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
       input[i] = (short) ((inBuf[i * 2] + inBuf[i * 2 + 1]) / 2);
     }
     final int outSize = input.length + hrirL.getSize() - 1;
-    final int fftSize = CalcUtil.calcFFTSize(outSize);
+    final int fftSize = ComplexArray.calcFFTSize(outSize);
     if (inputFft.size() != fftSize) {
       inputFft = new ComplexArray(input, fftSize);
     }
@@ -149,8 +148,6 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
     } catch (InterruptedException | ExecutionException e) {
       e.printStackTrace();
     }
-    final long elapse = System.nanoTime() - start;
-    Log.d(TAG, "convo: end>" + elapse + ", size>" + remaining + ", " + ((double) remaining / elapse * 1000_000_000) + "[sample/s]");
   }
 
   private boolean inputEnded = false;

@@ -7,14 +7,23 @@ import java.util.Arrays;
  */
 
 public class ComplexArray {
+  private static final int FFT_RADIX = 4;
   private final double[] real;
   private final double[] imag;
   private final int size;
+  private final double[] cos;
+  private final int[] reverse;
 
   ComplexArray(int size) {
     this.real = new double[size];
     this.imag = new double[size];
     this.size = size;
+    this.cos = new double[size];
+    this.reverse = new int[size];
+    for (int i = 0; i < size; i++) {
+      cos[i] = Math.cos(-2 * Math.PI * i / size);
+      reverse[i] = reverse(size, i);
+    }
   }
 
   public ComplexArray(short[] sig, int size) {
@@ -29,14 +38,6 @@ public class ComplexArray {
     for (int i = 0; i < sig.length; i++) {
       this.real[i] = sig[i];
     }
-  }
-
-  private static final int FFT_RADIX = 4;
-
-  static ComplexArray calcFFT(short[] sig, int fftSize) {
-    final ComplexArray res = new ComplexArray(sig, fftSize);
-    res.fft();
-    return res;
   }
 
   static ComplexArray calcFFT(int[] sig, int fftSize) {
@@ -55,60 +56,60 @@ public class ComplexArray {
   }
 
   void fft() {
-    int p1;
-    double o0Re, o0Im, o1Re, o1Im, o2Re, o2Im, o3Re, o3Im;
-    double wRe, wIm, re0, im0, re, im, omega;
+    int[] tmpIndex = new int[4];
+    double[] tmpRe = new double[4], tmpIm = new double[4];
+    double wRe, wIm, re0, im0;
     for (int P = size / FFT_RADIX; P >= 1; P /= FFT_RADIX) {
       final int PQ = P * FFT_RADIX;
       for (int offset = 0; offset < size; offset += PQ) {
-        for (int p = 0; p < P; p++) {
-          p1 = p + offset;
-          o0Re = real[p1];
-          o0Im = imag[p1];
-          o1Re = real[P + p1];
-          o1Im = imag[P + p1];
-          o2Re = real[2 * P + p1];
-          o2Im = imag[2 * P + p1];
-          o3Re = real[3 * P + p1];
-          o3Im = imag[3 * P + p1];
-          real[p1] = o0Re + o1Re + o2Re + o3Re;
-          imag[p1] = o0Im + o1Im + o2Im + o3Im;
-          real[P + p1] = o0Re + o1Im - o2Re - o3Im;
-          imag[P + p1] = o0Im - o1Re - o2Im + o3Re;
-          real[2 * P + p1] = o0Re - o1Re + o2Re - o3Re;
-          imag[2 * P + p1] = o0Im - o1Im + o2Im - o3Im;
-          real[3 * P + p1] = o0Re - o1Im - o2Re + o3Im;
-          imag[3 * P + p1] = o0Im + o1Re - o2Im - o3Re;
-          omega = -2 * Math.PI * p / PQ;
-          for (int r = 0; r < FFT_RADIX; r++) {
-            wRe = Math.cos(omega * r);
-            wIm = Math.sin(omega * r);
-            re0 = real[r * P + p1];
-            im0 = imag[r * P + p1];
-            re = re0 * wRe - im0 * wIm;
-            im = re0 * wIm + im0 * wRe;
-            real[r * P + p1] = re;
-            imag[r * P + p1] = im;
+        for (int p = offset; p < P + offset; p++) {
+          tmpIndex[0] = p;
+          tmpIndex[1] = P + p;
+          tmpIndex[2] = 2 * P + p;
+          tmpIndex[3] = 3 * P + p;
+          tmpRe[0] = real[tmpIndex[0]];
+          tmpIm[0] = imag[tmpIndex[0]];
+          tmpRe[1] = real[tmpIndex[1]];
+          tmpIm[1] = imag[tmpIndex[1]];
+          tmpRe[2] = real[tmpIndex[2]];
+          tmpIm[2] = imag[tmpIndex[2]];
+          tmpRe[3] = real[tmpIndex[3]];
+          tmpIm[3] = imag[tmpIndex[3]];
+          real[tmpIndex[0]] = tmpRe[0] + tmpRe[1] + tmpRe[2] + tmpRe[3];
+          imag[tmpIndex[0]] = tmpIm[0] + tmpIm[1] + tmpIm[2] + tmpIm[3];
+          real[tmpIndex[1]] = tmpRe[0] + tmpIm[1] - tmpRe[2] - tmpIm[3];
+          imag[tmpIndex[1]] = tmpIm[0] - tmpRe[1] - tmpIm[2] + tmpRe[3];
+          real[tmpIndex[2]] = tmpRe[0] - tmpRe[1] + tmpRe[2] - tmpRe[3];
+          imag[tmpIndex[2]] = tmpIm[0] - tmpIm[1] + tmpIm[2] - tmpIm[3];
+          real[tmpIndex[3]] = tmpRe[0] - tmpIm[1] - tmpRe[2] + tmpIm[3];
+          imag[tmpIndex[3]] = tmpIm[0] + tmpRe[1] - tmpIm[2] - tmpRe[3];
+        }
+        for (int r = 0; r < FFT_RADIX; r++) {
+          int rp = r * P + offset;
+          for (int p = 0; p < P; p++) {
+            int index = r * p * (size / PQ) % size;
+            wRe = cos[index];
+            wIm = cos[(index + size / 4) % size];
+            re0 = real[rp + p];
+            im0 = imag[rp + p];
+            real[rp + p] = re0 * wRe - im0 * wIm;
+            imag[rp + p] = re0 * wIm + im0 * wRe;
           }
         }
       }
     }
 
     for (int j = 1; j < size; j++) {
-      int i = reverse(size, j);
-      if (j < i) {
-        swap(i, j);
+      int i = reverse[j];
+      if (i < j) {
+        re0 = real[i];
+        im0 = imag[i];
+        real[i] = real[j];
+        imag[i] = imag[j];
+        real[j] = re0;
+        imag[j] = im0;
       }
     }
-  }
-
-  void prodExp(int i, double radix) {
-    final double wRe = Math.cos(radix);
-    final double wIm = Math.sin(radix);
-    final double re = this.real[i] * wRe - this.imag[i] * wIm;
-    final double im = this.real[i] * wIm + this.imag[i] * wRe;
-    this.real[i] = re;
-    this.imag[i] = im;
   }
 
   private static int reverse(int size, int i) {
@@ -124,10 +125,6 @@ public class ComplexArray {
     return reverse;
   }
 
-  int size() {
-    return size;
-  }
-
   void ifft() {
     conjugate();
     fft();
@@ -139,10 +136,6 @@ public class ComplexArray {
 
   void product(ComplexArray a, ComplexArray b) {
     productAll(this, a, b);
-  }
-
-  public static ComplexArray productAll(ComplexArray a, ComplexArray b) {
-    return productAll(new ComplexArray(a.size()), a, b);
   }
 
   public static ComplexArray productAll(ComplexArray p, ComplexArray a, ComplexArray b) {
@@ -161,36 +154,7 @@ public class ComplexArray {
     return p;
   }
 
-  public double[] getReal() {
-    return real;
-  }
-
-  void setReAt(int index, double value) {
-    real[index] = value;
-  }
-
-  double reAt(int index) {
-    return real[index];
-  }
-
-  void setImAt(int index, double value) {
-    imag[index] = value;
-  }
-
-  double imAt(int index) {
-    return imag[index];
-  }
-
-  public void swap(int i, int j) {
-    double re = real[i];
-    double im = imag[i];
-    real[i] = real[j];
-    imag[i] = imag[j];
-    real[j] = re;
-    imag[j] = im;
-  }
-
-  public void conjugate() {
+  private void conjugate() {
     double tmp;
     imag[0] *= -1;
     for (int i = 1; i < size / 2; i++) {
@@ -201,11 +165,18 @@ public class ComplexArray {
     imag[size / 2] *= -1;
   }
 
-  public void divideAllWithScalar(int scalar) {
-    for (int i = 0; i < size; i++) {
-      real[i] /= scalar;
-      imag[i] /= scalar;
-    }
+  static int calcFFTSize(int resSize) {
+    final int radix = (int) (Math.log10(FFT_RADIX) / Math.log10(2));
+    final int shift = (int) (Math.log10(resSize) / Math.log10(FFT_RADIX) + 1);
+    return (int) Math.pow(2, radix * shift);
+  }
+
+  int size() {
+    return size;
+  }
+
+  public double[] getReal() {
+    return real;
   }
 
   public double[] getImag() {
@@ -220,4 +191,32 @@ public class ComplexArray {
     }
     return sb.toString();
   }
+
+  // removed to improve performance
+  //  void swap(int i, int j) {
+//    double re = real[i];
+//    double im = imag[i];
+//    real[i] = real[j];
+//    imag[i] = imag[j];
+//    real[j] = re;
+//    imag[j] = im;
+//  }
+
+  // removed to improve performance
+//  public void divideAllWithScalar(int scalar) {
+//    for (int i = 0; i < size; i++) {
+//      real[i] /= scalar;
+//      imag[i] /= scalar;
+//    }
+//  }
+
+  // removed to improve performance
+//  void prodExp(int i, double radix) {
+//    final double wRe = Math.cos(radix);
+//    final double wIm = Math.sin(radix);
+//    final double re = this.real[i] * wRe - this.imag[i] * wIm;
+//    final double im = this.real[i] * wIm + this.imag[i] * wRe;
+//    this.real[i] = re;
+//    this.imag[i] = im;
+//  }
 }
