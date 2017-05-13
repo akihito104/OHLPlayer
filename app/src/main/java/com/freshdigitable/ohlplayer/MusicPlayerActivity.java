@@ -41,13 +41,13 @@ public class MusicPlayerActivity extends AppCompatActivity {
     setContentView(R.layout.activity_music_player);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-    final HRTF hrtfL;
-    final HRTF hrtfR;
+    final ImpulseResponse hrirL;
+    final ImpulseResponse hrirR;
     final SingleOHLAudioProcessor singleOHLAudioProcessor;
     try {
-      hrtfL = HRTF.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCL_44100.DDB"));
-      hrtfR = HRTF.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCR_44100.DDB"));
-      singleOHLAudioProcessor = new SingleOHLAudioProcessor(hrtfL, hrtfR);
+      hrirL = ImpulseResponse.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCL_44100.DDB"));
+      hrirR = ImpulseResponse.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCR_44100.DDB"));
+      singleOHLAudioProcessor = new SingleOHLAudioProcessor(hrirL, hrirR);
     } catch (IOException e) {
       Log.e(TAG, "onCreate: ", e);
       return;

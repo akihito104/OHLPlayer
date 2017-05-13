@@ -11,10 +11,10 @@ import java.util.concurrent.Callable;
 /**
  * Created by akihit on 2015/04/18.
  */
-public class HRTF {
+public class ImpulseResponse {
   private final int[] impulseRes;
 
-  public static HRTF loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
+  public static ImpulseResponse loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate((int) afd.getLength()).order(ByteOrder.LITTLE_ENDIAN);
     FileChannel fc = null;
     int bufSize;
@@ -33,40 +33,44 @@ public class HRTF {
     for (int i = 0; i < ir.length; i++) {
       ir[i] = (int) (doubleBuf[i + 190] * 32768.0);
     }
-    return new HRTF(ir);
+    return new ImpulseResponse(ir);
   }
 
+  private ComplexArray hrtf = new ComplexArray(0);
+  private ComplexArray cache = new ComplexArray(0);
   private int[] res = new int[0];
 
-  public int[] convo(final short[] sig) {
-    int siglen = sig.length;
-    int implen = impulseRes.length;
-    if (res.length != siglen + implen - 1) {
-      res = new int[siglen + implen - 1];
-    } else {
-      for (int i = 0; i < res.length; i++) {
-        res[i] = 0;
-      }
+  public int[] convo(final ComplexArray sig, int outSize) {
+    if (hrtf.size() != sig.size()) {
+      hrtf = ComplexArray.calcFFT(impulseRes, sig.size());
+      cache = new ComplexArray(sig.size());
     }
-    for (int i = 0; i < implen; i++) {
-      int ir = impulseRes[i];
-      for (int j = 0; j < siglen; j++) {
-        res[i + j] += sig[j] * ir;
-      }
+    if (res.length != outSize) {
+      res = new int[outSize];
+    }
+    cache.product(hrtf, sig);
+    cache.ifft();
+    final double[] resDouble = cache.getReal();
+    for (int i = 0; i < outSize; i++) {
+      res[i] = (int) resDouble[i];
     }
     return res;
   }
 
-  public Callable<int[]> callableConvo(final short[] sig) {
+  public Callable<int[]> callableConvo(final ComplexArray sig, final int outSize) {
     return new Callable<int[]>() {
       @Override
       public int[] call() throws Exception {
-        return convo(sig);
+        return convo(sig, outSize);
       }
     };
   }
 
-  private HRTF(int[] ir) {
+  private ImpulseResponse(int[] ir) {
     this.impulseRes = ir;
+  }
+
+  public int getSize() {
+    return this.impulseRes.length;
   }
 }
