@@ -63,8 +63,7 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
 
   private ByteBuffer buf = EMPTY_BUFFER;
   private ByteBuffer outBuf = EMPTY_BUFFER;
-  private int[] tailL = new int[0];
-  private int[] tailR = new int[0];
+  private AudioChannels tail = new AudioChannels();
 
   @Override
   public void queueInput(ByteBuffer inputBuf) {
@@ -89,24 +88,20 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
   }
 
   private void thru(ShortBuffer shortBuffer) {
-    final int size = Math.min(buf.remaining() / 4, tailL.length);
+    final int size = Math.min(buf.remaining() / 4, tail.size());
     for (int i = 0; i < size; i++) {
-      buf.putShort((short) (tailL[i] / VOLUME + shortBuffer.get(i * 2)));
-      buf.putShort((short) (tailR[i] / VOLUME + shortBuffer.get(i * 2 + 1)));
+      buf.putShort((short) (tail.getL(i) / VOLUME + shortBuffer.get(i * 2)));
+      buf.putShort((short) (tail.getR(i) / VOLUME + shortBuffer.get(i * 2 + 1)));
     }
     for (int i = size * 2; i < shortBuffer.remaining(); i++) {
       buf.putShort(shortBuffer.get(i));
     }
-    if (size < tailL.length) {
-      int[] newL = new int[tailL.length - size];
-      int[] newR = new int[tailR.length - size];
-      System.arraycopy(tailL, size, newL, 0, newL.length);
-      System.arraycopy(tailR, size, newR, 0, newR.length);
-      tailL = newL;
-      tailR = newR;
+    if (size < tail.size()) {
+      AudioChannels newChannels = new AudioChannels(tail.size() - size);
+      newChannels.copyFrom(tail, size, 0, newChannels.size());
+      tail = newChannels;
     } else {
-      tailL = new int[0];
-      tailR = new int[0];
+      tail = new AudioChannels();
     }
   }
 
@@ -137,23 +132,16 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
       final List<Future<int[]>> futures = executor.invokeAll(Arrays.asList(
           hrirL.callableConvo(inputFft, outSize),
           hrirR.callableConvo(inputFft, outSize)));
-      final int[] convoL = futures.get(0).get();
-      final int[] convoR = futures.get(1).get();
-      for (int i = 0; i < tailR.length; i++) {
-        convoL[i] += tailL[i];
-        convoR[i] += tailR[i];
-      }
-
+      AudioChannels audioChannels = new AudioChannels(futures.get(0).get(), futures.get(1).get());
+      audioChannels.add(tail);
       for (int i = 0; i < inputSize; i++) {
-        buf.putShort((short) (convoL[i] / VOLUME));
-        buf.putShort((short) (convoR[i] / VOLUME));
+        buf.putShort((short) (audioChannels.getL(i) / VOLUME));
+        buf.putShort((short) (audioChannels.getR(i) / VOLUME));
       }
-      if (tailL.length != convoL.length - inputSize) {
-        tailL = new int[convoL.length - inputSize];
-        tailR = new int[convoR.length - inputSize];
+      if (tail.size() != audioChannels.size() - inputSize) {
+        tail = new AudioChannels(audioChannels.size() - inputSize);
       }
-      System.arraycopy(convoL, inputSize, tailL, 0, tailL.length);
-      System.arraycopy(convoR, inputSize, tailR, 0, tailR.length);
+      tail.copyFrom(audioChannels, inputSize, 0, tail.size());
     } catch (InterruptedException | ExecutionException e) {
       e.printStackTrace();
     }
