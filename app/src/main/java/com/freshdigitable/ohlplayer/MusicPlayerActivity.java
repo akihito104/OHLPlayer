@@ -41,17 +41,14 @@ public class MusicPlayerActivity extends AppCompatActivity {
     setContentView(R.layout.activity_music_player);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-    final ImpulseResponse hrirL;
-    final ImpulseResponse hrirR;
-    final SingleOHLAudioProcessor singleOHLAudioProcessor;
+    final CenterHRTFConvoTask convoTask;
     try {
-      hrirL = ImpulseResponse.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCL_44100.DDB"));
-      hrirR = ImpulseResponse.loadImpulseResponse(getApplicationContext().getAssets().openFd("impCR_44100.DDB"));
-      singleOHLAudioProcessor = new SingleOHLAudioProcessor(hrirL, hrirR);
+      convoTask = CenterHRTFConvoTask.create(getApplicationContext());
     } catch (IOException e) {
       Log.e(TAG, "onCreate: ", e);
       return;
     }
+    final OHLAudioProcessor ohlAudioProcessor = new OHLAudioProcessor(convoTask);
 
     TrackSelector trackSelector = new DefaultTrackSelector();
     final DefaultLoadControl loadControl = new DefaultLoadControl();
@@ -59,7 +56,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
         null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF,DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS) {
       @Override
       protected AudioProcessor[] buildAudioProcessors() {
-        return new AudioProcessor[]{singleOHLAudioProcessor};
+        return new AudioProcessor[]{ohlAudioProcessor};
       }
     };
     ((TextView) findViewById(R.id.player_title)).setText(getIntent().getStringExtra("title"));
@@ -70,7 +67,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
     ohlToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
       @Override
       public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        singleOHLAudioProcessor.setEnabled(isChecked);
+        ohlAudioProcessor.setEnabled(isChecked);
       }
     });
     final TextView debugText = (TextView) findViewById(R.id.player_debug);

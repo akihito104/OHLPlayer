@@ -8,27 +8,20 @@ import com.google.android.exoplayer2.audio.AudioProcessor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Created by akihit on 2017/04/27.
  */
 
-public class SingleOHLAudioProcessor implements AudioProcessor {
-  private static final String TAG = SingleOHLAudioProcessor.class.getSimpleName();
+public class OHLAudioProcessor implements AudioProcessor {
+  private static final String TAG = OHLAudioProcessor.class.getSimpleName();
   private static final int VOLUME = 9000; // XXX
   private int channelCount = 0;
-  private ImpulseResponse hrirL, hrirR;
-  private ExecutorService executor = Executors.newFixedThreadPool(2);
 
-  SingleOHLAudioProcessor(ImpulseResponse hrirL, ImpulseResponse hrirR) {
-    this.hrirL = hrirL;
-    this.hrirR = hrirR;
+  private final ConvoTask convoTask;
+
+  OHLAudioProcessor(ConvoTask convoTask) {
+    this.convoTask = convoTask;
   }
 
   @Override
@@ -105,9 +98,7 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
     }
   }
 
-  private ComplexArray inputFft = new ComplexArray(0);
   private short[] inBuf = new short[0];
-  private short[] input = new short[0];
 
   private void convo(ShortBuffer shortBuffer) {
     final int remaining = shortBuffer.remaining();
@@ -116,35 +107,16 @@ public class SingleOHLAudioProcessor implements AudioProcessor {
       inBuf = new short[remaining];
     }
     shortBuffer.get(inBuf);
-    if (input.length != inputSize) {
-      input = new short[inputSize];
+    final AudioChannels audioChannels = convoTask.convo(inBuf);
+    audioChannels.add(tail);
+    for (int i = 0; i < inputSize; i++) {
+      buf.putShort((short) (audioChannels.getL(i) / VOLUME));
+      buf.putShort((short) (audioChannels.getR(i) / VOLUME));
     }
-    for (int i = 0; i < inputSize; i++) { // to monaural
-      input[i] = (short) ((inBuf[i * 2] + inBuf[i * 2 + 1]) / 2);
+    if (tail.size() != audioChannels.size() - inputSize) {
+      tail = new AudioChannels(audioChannels.size() - inputSize);
     }
-    final int outSize = input.length + hrirL.getSize() - 1;
-    final int fftSize = ComplexArray.calcFFTSize(outSize);
-    if (inputFft.size() != fftSize) {
-      inputFft = new ComplexArray(input, fftSize);
-    }
-    inputFft.fft(input);
-    try {
-      final List<Future<int[]>> futures = executor.invokeAll(Arrays.asList(
-          hrirL.callableConvo(inputFft, outSize),
-          hrirR.callableConvo(inputFft, outSize)));
-      AudioChannels audioChannels = new AudioChannels(futures.get(0).get(), futures.get(1).get());
-      audioChannels.add(tail);
-      for (int i = 0; i < inputSize; i++) {
-        buf.putShort((short) (audioChannels.getL(i) / VOLUME));
-        buf.putShort((short) (audioChannels.getR(i) / VOLUME));
-      }
-      if (tail.size() != audioChannels.size() - inputSize) {
-        tail = new AudioChannels(audioChannels.size() - inputSize);
-      }
-      tail.copyFrom(audioChannels, inputSize, 0, tail.size());
-    } catch (InterruptedException | ExecutionException e) {
-      e.printStackTrace();
-    }
+    tail.copyFrom(audioChannels, inputSize, 0, tail.size());
   }
 
   private boolean inputEnded = false;
