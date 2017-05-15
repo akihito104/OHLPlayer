@@ -43,7 +43,7 @@ public class CenterHRTFConvoTask implements ConvoTask {
     final int outSize = inBuf.length + hrirL.getSize() - 1;
     final int fftSize = ComplexArray.calcFFTSize(outSize);
     if (inputFft.size() != fftSize) {
-      inputFft = new ComplexArray(inBuf, fftSize);
+      inputFft = new ComplexArray(fftSize);
     }
     inputFft.fft(inBuf);
     final List<Future<int[]>> futures;

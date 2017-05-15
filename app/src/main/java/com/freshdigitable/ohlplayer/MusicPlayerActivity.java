@@ -41,9 +41,9 @@ public class MusicPlayerActivity extends AppCompatActivity {
     setContentView(R.layout.activity_music_player);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-    final CenterHRTFConvoTask convoTask;
+    final ConvoTask convoTask;
     try {
-      convoTask = CenterHRTFConvoTask.create(getApplicationContext());
+      convoTask = StereoHRTFConvoTask.create(getApplicationContext());
     } catch (IOException e) {
       Log.e(TAG, "onCreate: ", e);
       return;
