@@ -25,7 +25,8 @@ public class OHLAudioProcessor implements AudioProcessor {
   }
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, int encoding) throws UnhandledFormatException {
+  public boolean configure(int sampleRateHz, int channelCount, int encoding)
+      throws UnhandledFormatException {
     if (encoding != C.ENCODING_PCM_16BIT) {
       throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
     }
@@ -83,8 +84,8 @@ public class OHLAudioProcessor implements AudioProcessor {
   private void thru(ShortBuffer shortBuffer) {
     final int size = Math.min(buf.remaining() / 4, tail.size());
     for (int i = 0; i < size; i++) {
-      buf.putShort((short) (tail.getL(i) / VOLUME + shortBuffer.get(i * 2)));
-      buf.putShort((short) (tail.getR(i) / VOLUME + shortBuffer.get(i * 2 + 1)));
+      buf.putShort((short) (tail.getL(i) + shortBuffer.get(i * 2)));
+      buf.putShort((short) (tail.getR(i) + shortBuffer.get(i * 2 + 1)));
     }
     for (int i = size * 2; i < shortBuffer.remaining(); i++) {
       buf.putShort(shortBuffer.get(i));
@@ -109,9 +110,10 @@ public class OHLAudioProcessor implements AudioProcessor {
     shortBuffer.get(inBuf);
     final AudioChannels audioChannels = convoTask.convo(inBuf);
     audioChannels.add(tail);
+    audioChannels.printMax();
     for (int i = 0; i < inputSize; i++) {
-      buf.putShort((short) (audioChannels.getL(i) / VOLUME));
-      buf.putShort((short) (audioChannels.getR(i) / VOLUME));
+      buf.putShort((short) audioChannels.getL(i));
+      buf.putShort((short) audioChannels.getR(i));
     }
     if (tail.size() != audioChannels.size() - inputSize) {
       tail = new AudioChannels(audioChannels.size() - inputSize);
@@ -147,6 +149,7 @@ public class OHLAudioProcessor implements AudioProcessor {
   @Override
   public void release() {
     inputEnded = false;
+    convoTask.release();
   }
 
   private boolean enabled = false;

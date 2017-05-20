@@ -6,4 +6,6 @@ package com.freshdigitable.ohlplayer;
 
 public interface ConvoTask {
   AudioChannels convo(short[] input);
+
+  void release();
 }

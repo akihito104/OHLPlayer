@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
  * Created by akihit on 2015/04/18.
  */
 public class ImpulseResponse {
-  private final int[] impulseRes;
+  private final double[] impulseRes;
 
   public static ImpulseResponse loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate((int) afd.getLength()).order(ByteOrder.LITTLE_ENDIAN);
@@ -27,13 +27,13 @@ public class ImpulseResponse {
       }
     }
     bb.flip();
-    double[] doubleBuf = new double[bufSize / 8];
+    double[] doubleBuf = new double[bufSize / 8], res = new double[1400];
     bb.asDoubleBuffer().get(doubleBuf);
-    int[] ir = new int[1400];
-    for (int i = 0; i < ir.length; i++) {
-      ir[i] = (int) (doubleBuf[i + 190] * 32768.0);
+    System.arraycopy(doubleBuf, 190, res, 0, res.length);
+    for (int i=0;i<res.length;i++) {
+      res[i] *= 5;
     }
-    return new ImpulseResponse(ir);
+    return new ImpulseResponse(res);
   }
 
   private ComplexArray hrtf = new ComplexArray(0);
@@ -66,7 +66,7 @@ public class ImpulseResponse {
     };
   }
 
-  private ImpulseResponse(int[] ir) {
+  private ImpulseResponse(double[] ir) {
     this.impulseRes = ir;
   }
 
