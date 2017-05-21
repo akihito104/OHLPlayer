@@ -31,7 +31,7 @@ public class ImpulseResponse {
     bb.asDoubleBuffer().get(doubleBuf);
     System.arraycopy(doubleBuf, 190, res, 0, res.length);
     for (int i=0;i<res.length;i++) {
-      res[i] *= 5;
+      res[i] *= 4;
     }
     return new ImpulseResponse(res);
   }

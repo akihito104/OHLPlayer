@@ -56,14 +56,16 @@ public class AudioChannels {
   void printMax() {
     int l = findMax(chL);
     int r = findMax(chR);
-    Log.d(TAG, "printMax: L>" + l + ", R>" + r);
+    if (l > 30000 || r > 30000) {
+      Log.d(TAG, "printMax: L>" + l + ", R>" + r);
+    }
   }
 
   private static int findMax(int[] sig) {
-    int l = 0;
+    long l = 0;
     for (int c : sig) {
-      l = Math.max(l, c);
+      l = Math.max(l, c * c);
     }
-    return l;
+    return (int) Math.sqrt(l);
   }
 }

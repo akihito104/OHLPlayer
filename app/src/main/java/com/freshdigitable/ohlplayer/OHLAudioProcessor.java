@@ -110,7 +110,7 @@ public class OHLAudioProcessor implements AudioProcessor {
     shortBuffer.get(inBuf);
     final AudioChannels audioChannels = convoTask.convo(inBuf);
     audioChannels.add(tail);
-    audioChannels.printMax();
+//    audioChannels.printMax();
     for (int i = 0; i < inputSize; i++) {
       buf.putShort((short) audioChannels.getL(i));
       buf.putShort((short) audioChannels.getR(i));
