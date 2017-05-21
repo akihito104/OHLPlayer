@@ -81,6 +81,11 @@ public class StereoHRTFConvoTask implements ConvoTask {
     };
   }
 
+  @Override
+  public void release() {
+    executor.shutdown();
+  }
+
   public static StereoHRTFConvoTask create(Context context) throws IOException {
     final ImpulseResponse hrirL30L = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impL30L_44100.DDB"));
     final ImpulseResponse hrirL30R = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impL30R_44100.DDB"));

@@ -1,10 +1,13 @@
 package com.freshdigitable.ohlplayer;
 
+import android.util.Log;
+
 /**
  * Created by akihit on 2017/05/14.
  */
 
 public class AudioChannels {
+  private static final String TAG = AudioChannels.class.getSimpleName();
   private final int[] chL;
   private final int[] chR;
 
@@ -22,7 +25,8 @@ public class AudioChannels {
   }
 
   private void add(int[] adderL, int[] adderR) {
-    for (int i = 0; i < adderL.length; i++) {
+    int size = Math.min(chL.length, adderL.length);
+    for (int i = 0; i < size; i++) {
       this.chL[i] += adderL[i];
       this.chR[i] += adderR[i];
     }
@@ -47,5 +51,21 @@ public class AudioChannels {
 
   int getR(int i) {
     return chR[i];
+  }
+
+  void printMax() {
+    int l = findMax(chL);
+    int r = findMax(chR);
+    if (l > 30000 || r > 30000) {
+      Log.d(TAG, "printMax: L>" + l + ", R>" + r);
+    }
+  }
+
+  private static int findMax(int[] sig) {
+    long l = 0;
+    for (int c : sig) {
+      l = Math.max(l, c * c);
+    }
+    return (int) Math.sqrt(l);
   }
 }

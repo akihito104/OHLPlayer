@@ -56,4 +56,9 @@ public class CenterHRTFConvoTask implements ConvoTask {
       return new AudioChannels(0);
     }
   }
+
+  @Override
+  public void release() {
+    executor.shutdown();
+  }
 }

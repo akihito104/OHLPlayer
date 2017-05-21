@@ -40,7 +40,18 @@ public class ComplexArray {
     }
   }
 
+  public ComplexArray(double[] sig, int size) {
+    this(size);
+    System.arraycopy(sig, 0, this.real, 0, sig.length);
+  }
+
   static ComplexArray calcFFT(int[] sig, int fftSize) {
+    final ComplexArray res = new ComplexArray(sig, fftSize);
+    res.fft();
+    return res;
+  }
+
+  static ComplexArray calcFFT(double[] sig, int fftSize) {
     final ComplexArray res = new ComplexArray(sig, fftSize);
     res.fft();
     return res;
