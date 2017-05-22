@@ -68,4 +68,12 @@ public class AudioChannels {
     }
     return (int) Math.sqrt(l);
   }
+
+  double calcPow(int length) {
+    double res = 0;
+    for (int i = 0; i < length; i++) {
+      res += chL[i] * chL[i] + chR[i] * chR[i];
+    }
+    return res;
+  }
 }

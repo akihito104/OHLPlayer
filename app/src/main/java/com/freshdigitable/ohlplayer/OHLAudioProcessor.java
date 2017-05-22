@@ -84,11 +84,11 @@ public class OHLAudioProcessor implements AudioProcessor {
   private void thru(ShortBuffer shortBuffer) {
     final int size = Math.min(buf.remaining() / 4, tail.size());
     for (int i = 0; i < size; i++) {
-      buf.putShort((short) (tail.getL(i) + shortBuffer.get(i * 2)));
-      buf.putShort((short) (tail.getR(i) + shortBuffer.get(i * 2 + 1)));
+      buf.putShort((short) (tail.getL(i) + shortBuffer.get(i * 2)/4*3));
+      buf.putShort((short) (tail.getR(i) + shortBuffer.get(i * 2 + 1)/4*3));
     }
     for (int i = size * 2; i < shortBuffer.remaining(); i++) {
-      buf.putShort(shortBuffer.get(i));
+      buf.putShort((short) (shortBuffer.get(i)/4*3));
     }
     if (size < tail.size()) {
       AudioChannels newChannels = new AudioChannels(tail.size() - size);
@@ -108,8 +108,14 @@ public class OHLAudioProcessor implements AudioProcessor {
       inBuf = new short[remaining];
     }
     shortBuffer.get(inBuf);
+//    double originalPow = 0;
+//    for (int i : inBuf) {
+//      originalPow += i * i;
+//    }
     final AudioChannels audioChannels = convoTask.convo(inBuf);
     audioChannels.add(tail);
+//    double processedPow = audioChannels.calcPow(inBuf.length / 2);
+//    Log.d(TAG, "convo: ratio> " + (processedPow / originalPow));
 //    audioChannels.printMax();
     for (int i = 0; i < inputSize; i++) {
       buf.putShort((short) audioChannels.getL(i));
