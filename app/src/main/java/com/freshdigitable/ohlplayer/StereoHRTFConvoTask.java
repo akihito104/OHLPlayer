@@ -106,8 +106,8 @@ public class StereoHRTFConvoTask implements ConvoTask {
 
     int startL = this.hrirL30L.findFirstEdge();
     int startR = this.hrirR30R.findFirstEdge();
-    double powL = this.hrirL30L.power(startL, RESPONSE_LENGTH) + this.hrirR30L.power(startR, RESPONSE_LENGTH);
-    double powR = this.hrirR30R.power(startR, RESPONSE_LENGTH) + this.hrirL30R.power(startL, RESPONSE_LENGTH);
+    double powL = this.hrirL30L.power(startL, RESPONSE_LENGTH);// + this.hrirR30L.power(startR, RESPONSE_LENGTH);
+    double powR = this.hrirR30R.power(startR, RESPONSE_LENGTH);// + this.hrirL30R.power(startL, RESPONSE_LENGTH);
     this.hrirL30L.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP);
     this.hrirL30R.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP);
     this.hrirR30L.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * Math.sqrt(powL / powR));

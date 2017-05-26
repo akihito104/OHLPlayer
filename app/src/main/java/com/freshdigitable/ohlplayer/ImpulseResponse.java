@@ -105,8 +105,19 @@ public class ImpulseResponse {
     return pow;
   }
 
+  public double maxAmp() {
+    double max = 0;
+    for (double d : impulseRes) {
+      max = Math.max(max, d * d);
+    }
+    return Math.sqrt(max);
+  }
+
   @Override
   public String toString() {
-    return "len>" + impulseRes.length + ", edge> " + findFirstEdge() + ", pow>" + power();
+    return "len>" + impulseRes.length
+        + ", edge> " + findFirstEdge()
+        + ", pow>" + power()
+        + ", max> " + maxAmp();
   }
 }
