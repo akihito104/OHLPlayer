@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
  */
 
 public class StereoHRTFConvoTask implements ConvoTask {
+//  private static final String TAG = StereoHRTFConvoTask.class.getSimpleName();
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
   private final ImpulseResponse hrirL30L, hrirL30R;
   private final ImpulseResponse hrirR30L, hrirR30R;
@@ -94,11 +95,22 @@ public class StereoHRTFConvoTask implements ConvoTask {
     return new StereoHRTFConvoTask(hrirL30L, hrirL30R, hrirR30L, hrirR30R);
   }
 
+  private static final int RESPONSE_LENGTH = 1800;
+  private static final double RESPONSE_AMP = 3;
   private StereoHRTFConvoTask(ImpulseResponse hrirL30L, ImpulseResponse hrirL30R,
                               ImpulseResponse hrirR30L, ImpulseResponse hrirR30R) {
     this.hrirL30L = hrirL30L;
     this.hrirL30R = hrirL30R;
     this.hrirR30L = hrirR30L;
     this.hrirR30R = hrirR30R;
+
+    int startL = this.hrirL30L.findFirstEdge();
+    int startR = this.hrirR30R.findFirstEdge();
+    double powL = this.hrirL30L.power(startL, RESPONSE_LENGTH);// + this.hrirR30L.power(startR, RESPONSE_LENGTH);
+    double powR = this.hrirR30R.power(startR, RESPONSE_LENGTH);// + this.hrirL30R.power(startL, RESPONSE_LENGTH);
+    this.hrirL30L.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP);
+    this.hrirL30R.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP);
+    this.hrirR30L.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * Math.sqrt(powL / powR));
+    this.hrirR30R.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * Math.sqrt(powL / powR));
   }
 }

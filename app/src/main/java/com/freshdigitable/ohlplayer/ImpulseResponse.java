@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
  * Created by akihit on 2015/04/18.
  */
 public class ImpulseResponse {
-  private final double[] impulseRes;
+  private double[] impulseRes;
 
   public static ImpulseResponse loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate((int) afd.getLength()).order(ByteOrder.LITTLE_ENDIAN);
@@ -27,13 +27,9 @@ public class ImpulseResponse {
       }
     }
     bb.flip();
-    double[] doubleBuf = new double[bufSize / 8], res = new double[1400];
+    double[] doubleBuf = new double[bufSize / 8];
     bb.asDoubleBuffer().get(doubleBuf);
-    System.arraycopy(doubleBuf, 190, res, 0, res.length);
-    for (int i=0;i<res.length;i++) {
-      res[i] *= 4;
-    }
-    return new ImpulseResponse(res);
+    return new ImpulseResponse(doubleBuf);
   }
 
   private ComplexArray hrtf = new ComplexArray(0);
@@ -72,5 +68,56 @@ public class ImpulseResponse {
 
   public int getSize() {
     return this.impulseRes.length;
+  }
+
+  public void reform(int start, int length, double amp) {
+    final double[] newArr = new double[length];
+    System.arraycopy(this.impulseRes, start, newArr, 0, length);
+    this.impulseRes = newArr;
+    for (int i = 0; i < length; i++) {
+      impulseRes[i] *= amp;
+    }
+  }
+
+  public int findFirstEdge() {
+    final double pow = power();
+    double sum = 0;
+    for (int i = 0; i < impulseRes.length; i++) {
+      sum += impulseRes[i] * impulseRes[i];
+      if (sum / pow > 0.001) {
+        return i;
+      }
+    }
+    throw new IllegalStateException();
+  }
+
+  public double power() {
+    return power(0, impulseRes.length);
+  }
+
+  public double power(int start, int length) {
+    double pow = 0;
+    int end = start + length;
+    for (int i = start; i < end; i++) {
+      double d = impulseRes[i];
+      pow += d * d;
+    }
+    return pow;
+  }
+
+  public double maxAmp() {
+    double max = 0;
+    for (double d : impulseRes) {
+      max = Math.max(max, d * d);
+    }
+    return Math.sqrt(max);
+  }
+
+  @Override
+  public String toString() {
+    return "len>" + impulseRes.length
+        + ", edge> " + findFirstEdge()
+        + ", pow>" + power()
+        + ", max> " + maxAmp();
   }
 }

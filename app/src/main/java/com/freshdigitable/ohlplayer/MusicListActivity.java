@@ -63,8 +63,8 @@ public class MusicListActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onViewDetachedFromWindow(Holder holder) {
-      super.onViewDetachedFromWindow(holder);
+    public void onViewRecycled(Holder holder) {
+      super.onViewRecycled(holder);
       holder.itemView.setOnClickListener(null);
     }
 
