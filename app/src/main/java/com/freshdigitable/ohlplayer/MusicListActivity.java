@@ -11,29 +11,88 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import io.realm.OrderedCollectionChangeSet;
+import io.realm.OrderedCollectionChangeSet.Range;
+import io.realm.OrderedRealmCollectionChangeListener;
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
+
 public class MusicListActivity extends AppCompatActivity {
+
+  private RecyclerView listView;
+  private Realm playList;
+  private RealmResults<MusicItem> musicItems;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_music_list);
 
-    final File externalFilesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
-    final String[] fileList = externalFilesDir.list();
-    final ArrayList<MusicItem> musicItems = new ArrayList<>();
-    for (String s : fileList) {
-      musicItems.add(new MusicItem(externalFilesDir, s));
-    }
-
-    RecyclerView listView = (RecyclerView) findViewById(R.id.list);
+    listView = (RecyclerView) findViewById(R.id.list);
     final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
     linearLayoutManager.setAutoMeasureEnabled(true);
     listView.setLayoutManager(linearLayoutManager);
-    listView.setAdapter(new ViewAdapter(musicItems));
+  }
+
+  @Override
+  protected void onStart() {
+    super.onStart();
+    final RealmConfiguration realmConfig = new RealmConfiguration.Builder()
+        .name("play_list")
+        .deleteRealmIfMigrationNeeded()
+        .build();
+    playList = Realm.getInstance(realmConfig);
+    addNewMusic();
+    musicItems = playList
+        .where(MusicItem.class)
+        .findAllSorted("path");
+    final ViewAdapter adapter = new ViewAdapter(musicItems);
+    musicItems.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<MusicItem>>() {
+      @Override
+      public void onChange(RealmResults<MusicItem> musicItems, OrderedCollectionChangeSet changeSet) {
+        for (Range r : changeSet.getInsertionRanges()) {
+          adapter.notifyItemRangeInserted(r.startIndex, r.length);
+        }
+        for (Range r : changeSet.getChangeRanges()) {
+          adapter.notifyItemRangeChanged(r.startIndex, r.length);
+        }
+        for (Range r : changeSet.getDeletionRanges()) {
+          adapter.notifyItemRangeRemoved(r.startIndex, r.length);
+        }
+      }
+    });
+    listView.setAdapter(adapter);
+  }
+
+  private void addNewMusic() {
+    final File externalFilesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+    final String[] fileList = externalFilesDir.list();
+    for (final String fileName : fileList) {
+      final String filePath = new File(externalFilesDir, fileName).getAbsolutePath();
+      playList.executeTransactionAsync(new Realm.Transaction() {
+        @Override
+        public void execute(Realm realm) {
+          final MusicItem item = realm.where(MusicItem.class)
+              .equalTo("path", filePath)
+              .findFirst();
+          if (item == null) {
+            final MusicItem musicItem = new MusicItem(filePath, fileName);
+            realm.insert(musicItem);
+          }
+        }
+      });
+    }
+  }
+
+  @Override
+  protected void onStop() {
+    super.onStop();
+    musicItems.removeAllChangeListeners();
+    listView.setAdapter(null);
+    playList.close();
   }
 
   private static class ViewAdapter extends RecyclerView.Adapter<ViewAdapter.Holder> {
@@ -41,7 +100,6 @@ public class MusicListActivity extends AppCompatActivity {
 
     ViewAdapter(List<MusicItem> fileList) {
       this.fileList = fileList;
-      Collections.sort(this.fileList);
     }
 
     @Override

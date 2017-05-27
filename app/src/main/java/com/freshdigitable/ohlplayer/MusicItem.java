@@ -6,16 +6,23 @@ import android.support.annotation.NonNull;
 import java.io.File;
 import java.io.Serializable;
 
+import io.realm.RealmModel;
+import io.realm.annotations.PrimaryKey;
+import io.realm.annotations.RealmClass;
+
 /**
  * Created by akihit on 2017/04/28.
  */
+@RealmClass
+public class MusicItem implements Serializable, Comparable<MusicItem>, RealmModel {
+  private String title;
+  @PrimaryKey
+  private String path;
 
-public class MusicItem implements Serializable, Comparable<MusicItem> {
-  private final Uri uri;
-  private final String title;
+  public MusicItem() { }
 
-  public MusicItem(Uri uri, String title) {
-    this.uri = uri;
+  public MusicItem(String path, String title) {
+    this.path = path;
     this.title = title;
   }
 
@@ -24,12 +31,12 @@ public class MusicItem implements Serializable, Comparable<MusicItem> {
   }
 
   public MusicItem(File parent, String file, String title) {
-    this(Uri.parse(new File(parent, file).getAbsolutePath()), title);
+    this(new File(parent, file).getAbsolutePath(), title);
 
   }
 
   public Uri getUri() {
-    return uri;
+    return Uri.parse(path);
   }
 
   public String getTitle() {
