@@ -34,6 +34,8 @@ public class MusicPlayerActivity extends AppCompatActivity {
   private PlaybackControlView controller;
   private Switch ohlToggle;
   private DebugTextViewHelper debugTextViewHelper;
+  private final PlayItemStore playItemStore = new PlayItemStore();
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +61,6 @@ public class MusicPlayerActivity extends AppCompatActivity {
         return new AudioProcessor[]{ohlAudioProcessor};
       }
     };
-    ((TextView) findViewById(R.id.player_title)).setText(getIntent().getStringExtra("title"));
     controller = (PlaybackControlView) findViewById(R.id.player_controller);
     controller.setPlayer(simpleExoPlayer);
     controller.show();
@@ -86,12 +87,16 @@ public class MusicPlayerActivity extends AppCompatActivity {
   @Override
   protected void onStart() {
     super.onStart();
+    playItemStore.open();
+    MusicItem item = playItemStore.findByPath(getIntent().getStringExtra("path"));
+    ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
     debugTextViewHelper.start();
   }
 
   @Override
   protected void onStop() {
     super.onStop();
+    playItemStore.close();
     debugTextViewHelper.stop();
   }
 
@@ -110,15 +115,15 @@ public class MusicPlayerActivity extends AppCompatActivity {
     }
   }
 
-  static Intent createIntent(Context context, Uri music, String title) {
+  static Intent createIntent(Context context, MusicItem item) {
     Intent intent = new Intent(context, MusicPlayerActivity.class);
-    intent.setData(music);
-    intent.putExtra("title", title);
+    intent.setData(item.getUri());
+    intent.putExtra("path", item.getPath());
     return intent;
   }
 
   static void start(Context context, MusicItem item) {
-    final Intent intent = createIntent(context, item.getUri(), item.getTitle());
+    Intent intent = createIntent(context, item);
     context.startActivity(intent);
   }
 }

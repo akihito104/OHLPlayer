@@ -35,6 +35,10 @@ public class MusicItem implements Serializable, Comparable<MusicItem>, RealmMode
 
   }
 
+  public String getPath() {
+    return path;
+  }
+
   public Uri getUri() {
     return Uri.parse(path);
   }
