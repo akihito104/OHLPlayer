@@ -1,5 +1,7 @@
 package com.freshdigitable.ohlplayer;
 
+import android.media.MediaMetadataRetriever;
+
 import java.io.File;
 import java.util.List;
 
@@ -25,7 +27,7 @@ public class PlayItemStore {
     playList = Realm.getInstance(realmConfig);
     musicItems = playList
         .where(MusicItem.class)
-        .findAllSorted("path");
+        .findAllSorted("title");
   }
 
   public void addEventListener(final StoreEventListener l) {
@@ -52,10 +54,15 @@ public class PlayItemStore {
       if (item != null) {
         continue;
       }
+      final MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
+      metadataRetriever.setDataSource(path);
+      final String title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+      final String artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+      metadataRetriever.release();
       playList.executeTransactionAsync(new Realm.Transaction() {
         @Override
         public void execute(Realm realm) {
-          final MusicItem musicItem = new MusicItem(path, file.getName());
+          final MusicItem musicItem = new MusicItem.Builder(path).title(title).artist(artist).build();
           realm.insert(musicItem);
         }
       });

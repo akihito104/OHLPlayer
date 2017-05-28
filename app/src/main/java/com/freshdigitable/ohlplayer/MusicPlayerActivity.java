@@ -90,6 +90,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
     playItemStore.open();
     MusicItem item = playItemStore.findByPath(getIntent().getStringExtra("path"));
     ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
+    ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
     debugTextViewHelper.start();
   }
 

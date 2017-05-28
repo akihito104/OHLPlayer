@@ -25,12 +25,25 @@
         tools:text="title"
         />
     <TextView
+        android:id="@+id/player_artist"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/player_title"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:textSize="18sp"
+        android:textColor="#999"
+        tools:text="artist"
+        />
+    <TextView
         android:id="@+id/player_debug"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/player_title"
+        app:layout_constraintTop_toBottomOf="@+id/player_artist"
         android:layout_marginTop="24dp"
         />
     <TextView

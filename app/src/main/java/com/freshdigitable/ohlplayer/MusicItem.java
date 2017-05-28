@@ -3,7 +3,6 @@ package com.freshdigitable.ohlplayer;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 
-import java.io.File;
 import java.io.Serializable;
 
 import io.realm.RealmModel;
@@ -15,25 +14,12 @@ import io.realm.annotations.RealmClass;
  */
 @RealmClass
 public class MusicItem implements Serializable, Comparable<MusicItem>, RealmModel {
-  private String title;
   @PrimaryKey
   private String path;
+  private String title;
+  private String artist;
 
   public MusicItem() { }
-
-  public MusicItem(String path, String title) {
-    this.path = path;
-    this.title = title;
-  }
-
-  public MusicItem(File parent, String file) {
-    this(parent, file, file);
-  }
-
-  public MusicItem(File parent, String file, String title) {
-    this(new File(parent, file).getAbsolutePath(), title);
-
-  }
 
   public String getPath() {
     return path;
@@ -47,8 +33,42 @@ public class MusicItem implements Serializable, Comparable<MusicItem>, RealmMode
     return title;
   }
 
+  public String getArtist() {
+    return artist;
+  }
+
+  private MusicItem(Builder builder) {
+    this.path = builder.path;
+    this.title = builder.title;
+    this.artist = builder.artist;
+  }
+
   @Override
   public int compareTo(@NonNull MusicItem o) {
     return this.title.compareTo(o.title);
+  }
+
+  public static class Builder {
+    private String path;
+    private String title;
+    private String artist;
+
+    public Builder(@NonNull String path) {
+      this.path = path;
+    }
+
+    Builder title(String title) {
+      this.title = title;
+      return this;
+    }
+
+    Builder artist(String artist) {
+      this.artist = artist;
+      return this;
+    }
+
+    MusicItem build() {
+      return new MusicItem(this);
+    }
   }
 }

@@ -86,6 +86,7 @@ public class MusicListActivity extends AppCompatActivity {
     public void onBindViewHolder(Holder holder, int position) {
       final MusicItem item = playItemStore.get(position);
       holder.title.setText(item.getTitle());
+      holder.artist.setText(item.getArtist());
       holder.itemView.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -107,10 +108,12 @@ public class MusicListActivity extends AppCompatActivity {
 
     static class Holder extends RecyclerView.ViewHolder {
       private final TextView title;
+      private final TextView artist;
 
       Holder(View itemView) {
         super(itemView);
         title = (TextView) itemView.findViewById(R.id.list_title);
+        artist = (TextView) itemView.findViewById(R.id.list_artist);
       }
     }
   }
