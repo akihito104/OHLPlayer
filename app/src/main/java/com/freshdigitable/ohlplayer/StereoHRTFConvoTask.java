@@ -96,7 +96,7 @@ public class StereoHRTFConvoTask implements ConvoTask {
   }
 
   private static final int RESPONSE_LENGTH = 1800;
-  private static final double RESPONSE_AMP = 3;
+  private static final double RESPONSE_AMP = 4;
   private StereoHRTFConvoTask(ImpulseResponse hrirL30L, ImpulseResponse hrirL30R,
                               ImpulseResponse hrirR30L, ImpulseResponse hrirR30R) {
     this.hrirL30L = hrirL30L;

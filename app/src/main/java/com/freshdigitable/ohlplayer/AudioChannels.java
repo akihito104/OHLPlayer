@@ -53,27 +53,50 @@ public class AudioChannels {
     return chR[i];
   }
 
-  void printMax() {
-    int l = findMax(chL);
-    int r = findMax(chR);
-    if (l > 30000 || r > 30000) {
-      Log.d(TAG, "printMax: L>" + l + ", R>" + r);
+  public void productFactor(double factor) {
+    final int size = size();
+    for (int i = 0; i < size; i++) {
+      chL[i] *= factor;
+      chR[i] *= factor;
     }
   }
 
-  private static int findMax(int[] sig) {
-    long l = 0;
-    for (int c : sig) {
-      l = Math.max(l, c * c);
+  public double checkClipping(int limit) {
+    double max = 0;
+    int maxIndex = 0;
+    for (int i = 0; i < size(); i++) {
+      double pow = chL[i] * chL[i];
+      if (max < pow) {
+        max = pow;
+        maxIndex = i;
+      }
+      pow = chR[i] * chR[i];
+      if (max < pow) {
+        max = pow;
+      }
     }
-    return (int) Math.sqrt(l);
+    max = Math.sqrt(max);
+    if (max > limit) {
+      final double endFactor = limit / max;
+      Log.d(TAG, "checkClipping: max>" + endFactor);
+      productCosSlope(endFactor, maxIndex);
+      return endFactor;
+    }
+    return 1;
   }
 
-  double calcPow(int length) {
-    double res = 0;
-    for (int i = 0; i < length; i++) {
-      res += chL[i] * chL[i] + chR[i] * chR[i];
+  private void productCosSlope(double endFactor, int size) {
+    final double amp = -(1 - endFactor) / 2;
+
+    for (int i = 0; i < size; i++) {
+      final double a = 1 + amp * (1 - Math.cos(Math.PI * i / size));
+      chL[i] *= a;
+      chR[i] *= a;
     }
-    return res;
+    int full = size();
+    for (int i = size; i < full; i++) {
+      chL[i] *= endFactor;
+      chR[i] *= endFactor;
+    }
   }
 }
