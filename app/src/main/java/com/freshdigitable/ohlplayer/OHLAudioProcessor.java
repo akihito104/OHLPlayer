@@ -151,7 +151,7 @@ public class OHLAudioProcessor implements AudioProcessor {
   }
 
   @Override
-  public void release() {
+  public void reset() {
     inputEnded = false;
     convoTask.release();
   }
