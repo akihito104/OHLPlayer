@@ -13,7 +13,8 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -27,9 +28,6 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
 import java.io.IOException;
-
-import static com.google.android.exoplayer2.ExoPlayerFactory.DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS;
-import static com.google.android.exoplayer2.SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF;
 
 public class MusicPlayerActivity extends AppCompatActivity {
   private static final String TAG = MusicPlayerActivity.class.getSimpleName();
@@ -135,14 +133,13 @@ public class MusicPlayerActivity extends AppCompatActivity {
   private static SimpleExoPlayer createPlayer(@NonNull Context context,
                                               @NonNull final OHLAudioProcessor ohlAudioProcessor) {
     final TrackSelector trackSelector = new DefaultTrackSelector();
-    final DefaultLoadControl loadControl = new DefaultLoadControl();
-    return new SimpleExoPlayer(context, trackSelector, loadControl, null,
-        EXTENSION_RENDERER_MODE_OFF, DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS) {
+    final DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(context) {
       @Override
       protected AudioProcessor[] buildAudioProcessors() {
         return new AudioProcessor[]{ohlAudioProcessor};
       }
     };
+    return ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector);
   }
 
   private static final String USER_AGENT_NAME = "ohlplayer";

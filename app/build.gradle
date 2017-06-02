@@ -25,13 +25,15 @@ android {
 }
 
 def supportLibVer = '25.3.1'
+def exoplayerVer = 'r2.4.1'
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.google.android.exoplayer:exoplayer:r2.3.1'
+    compile "com.google.android.exoplayer:exoplayer-core:$exoplayerVer"
+    compile "com.google.android.exoplayer:exoplayer-ui:$exoplayerVer"
     compile "com.android.support:appcompat-v7:$supportLibVer"
     compile "com.android.support:recyclerview-v7:$supportLibVer"
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
