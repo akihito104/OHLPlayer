@@ -1,5 +1,6 @@
 package com.freshdigitable.ohlplayer;
 
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 
 import java.io.IOException;
@@ -13,6 +14,10 @@ import java.util.concurrent.Callable;
  */
 public class ImpulseResponse {
   private double[] impulseRes;
+
+  public static ImpulseResponse loadImpulseResponse(Context context, String name) throws IOException {
+    return loadImpulseResponse(context.getAssets().openFd(name));
+  }
 
   public static ImpulseResponse loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate((int) afd.getLength()).order(ByteOrder.LITTLE_ENDIAN);

@@ -88,15 +88,15 @@ public class StereoHRTFConvoTask implements ConvoTask {
   }
 
   public static StereoHRTFConvoTask create(Context context) throws IOException {
-    final ImpulseResponse hrirL30L = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impL30L_44100.DDB"));
-    final ImpulseResponse hrirL30R = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impL30R_44100.DDB"));
-    final ImpulseResponse hrirR30L = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impR30L_44100.DDB"));
-    final ImpulseResponse hrirR30R = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impR30R_44100.DDB"));
+    final ImpulseResponse hrirL30L = ImpulseResponse.loadImpulseResponse(context, "impL30L_44100_20k.DDB");
+    final ImpulseResponse hrirL30R = ImpulseResponse.loadImpulseResponse(context, "impL30R_44100_20k.DDB");
+    final ImpulseResponse hrirR30L = ImpulseResponse.loadImpulseResponse(context, "impR30L_44100_20k.DDB");
+    final ImpulseResponse hrirR30R = ImpulseResponse.loadImpulseResponse(context, "impR30R_44100_20k.DDB");
     return new StereoHRTFConvoTask(hrirL30L, hrirL30R, hrirR30L, hrirR30R);
   }
 
   private static final int RESPONSE_LENGTH = 1800;
-  private static final double RESPONSE_AMP = 4;
+  private static final double RESPONSE_AMP = 3;
   private StereoHRTFConvoTask(ImpulseResponse hrirL30L, ImpulseResponse hrirL30R,
                               ImpulseResponse hrirR30L, ImpulseResponse hrirR30R) {
     this.hrirL30L = hrirL30L;
