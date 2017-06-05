@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MusicListActivity extends AppCompatActivity {
@@ -43,7 +44,7 @@ public class MusicListActivity extends AppCompatActivity {
     final ViewAdapter adapter = new ViewAdapter(playItemStore);
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
         == PackageManager.PERMISSION_GRANTED) {
-      addNewMusic();
+      addLocalMediaFiles();
     } else {
       if (!ActivityCompat.shouldShowRequestPermissionRationale(
           this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -63,17 +64,19 @@ public class MusicListActivity extends AppCompatActivity {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     if (requestCode == 100) {
       if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-        addNewMusic();
+        addLocalMediaFiles();
       }
     }
   }
 
-  private void addNewMusic() {
-    final File externalFilesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
-    final String[] fileList = externalFilesDir.list();
-    List<File> files = new ArrayList<>(fileList.length);
-    for (String name : fileList) {
-      files.add(new File(externalFilesDir, name));
+  private void addLocalMediaFiles() {
+    final List<File> files = new ArrayList<>();
+    for (String type : Arrays.asList(Environment.DIRECTORY_MUSIC, Environment.DIRECTORY_MOVIES)) {
+      final File externalFilesDir = Environment.getExternalStoragePublicDirectory(type);
+      final String[] fileList = externalFilesDir.list();
+      for (String name : fileList) {
+        files.add(new File(externalFilesDir, name));
+      }
     }
     playItemStore.registerIfAbsent(files);
   }

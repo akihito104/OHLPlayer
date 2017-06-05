@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Switch;
@@ -21,7 +22,6 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.ui.DebugTextViewHelper;
 import com.google.android.exoplayer2.ui.PlaybackControlView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
@@ -48,6 +48,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
     if (ohlAudioProcessor == null) return;
 
     simpleExoPlayer = createPlayer(getApplicationContext(), ohlAudioProcessor);
+    simpleExoPlayer.setVideoSurfaceView((SurfaceView) findViewById(R.id.player_surface_view));
     controller.setPlayer(simpleExoPlayer);
     controller.show();
     ohlToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -62,8 +63,6 @@ public class MusicPlayerActivity extends AppCompatActivity {
     simpleExoPlayer.prepare(extractorMediaSource);
   }
 
-  private DebugTextViewHelper debugTextViewHelper;
-
   @Override
   protected void onStart() {
     super.onStart();
@@ -71,17 +70,12 @@ public class MusicPlayerActivity extends AppCompatActivity {
     final MusicItem item = playItemStore.findByPath(getPath());
     ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
     ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
-
-    final TextView debugText = (TextView) findViewById(R.id.player_debug);
-    debugTextViewHelper = new DebugTextViewHelper(simpleExoPlayer, debugText);
-    debugTextViewHelper.start();
   }
 
   @Override
   protected void onStop() {
     super.onStop();
     playItemStore.close();
-    debugTextViewHelper.stop();
   }
 
   @Override
