@@ -21,19 +21,19 @@ public class PlayItemStore {
       .name("play_list")
       .deleteRealmIfMigrationNeeded()
       .build();
-  private RealmResults<MusicItem> musicItems;
+  private RealmResults<MediaItem> mediaItems;
 
   public void open() {
     playList = Realm.getInstance(realmConfig);
-    musicItems = playList
-        .where(MusicItem.class)
+    mediaItems = playList
+        .where(MediaItem.class)
         .findAllSorted("title");
   }
 
   public void addEventListener(final StoreEventListener l) {
-    musicItems.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<MusicItem>>() {
+    mediaItems.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<MediaItem>>() {
       @Override
-      public void onChange(RealmResults<MusicItem> musicItems, OrderedCollectionChangeSet changeSet) {
+      public void onChange(RealmResults<MediaItem> mediaItems, OrderedCollectionChangeSet changeSet) {
         for (OrderedCollectionChangeSet.Range r : changeSet.getInsertionRanges()) {
           l.onStoreUpdate(EventType.INSERT, r.startIndex, r.length);
         }
@@ -50,7 +50,7 @@ public class PlayItemStore {
   public void registerIfAbsent(final List<File> files) {
     for (final File file : files) {
       final String path = file.getAbsolutePath();
-      final MusicItem item = findByPath(path);
+      final MediaItem item = findByPath(path);
       if (item != null) {
         continue;
       }
@@ -62,28 +62,28 @@ public class PlayItemStore {
       playList.executeTransactionAsync(new Realm.Transaction() {
         @Override
         public void execute(Realm realm) {
-          final MusicItem musicItem = new MusicItem.Builder(path).title(title).artist(artist).build();
-          realm.insert(musicItem);
+          final MediaItem mediaItem = new MediaItem.Builder(path).title(title).artist(artist).build();
+          realm.insert(mediaItem);
         }
       });
     }
   }
 
-  public MusicItem get(int index) {
-    return musicItems.get(index);
+  public MediaItem get(int index) {
+    return mediaItems.get(index);
   }
 
   public int getItemCount() {
-    return musicItems == null ? 0 : musicItems.size();
+    return mediaItems == null ? 0 : mediaItems.size();
   }
 
   public void close() {
-    musicItems.removeAllChangeListeners();
+    mediaItems.removeAllChangeListeners();
     playList.close();
   }
 
-  public MusicItem findByPath(String path) {
-    return playList.where(MusicItem.class)
+  public MediaItem findByPath(String path) {
+    return playList.where(MediaItem.class)
         .equalTo("path", path)
         .findFirst();
   }

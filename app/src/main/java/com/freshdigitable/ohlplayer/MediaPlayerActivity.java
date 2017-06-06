@@ -29,8 +29,8 @@ import com.google.android.exoplayer2.util.Util;
 
 import java.io.IOException;
 
-public class MusicPlayerActivity extends AppCompatActivity {
-  private static final String TAG = MusicPlayerActivity.class.getSimpleName();
+public class MediaPlayerActivity extends AppCompatActivity {
+  private static final String TAG = MediaPlayerActivity.class.getSimpleName();
   private SimpleExoPlayer simpleExoPlayer;
   private PlaybackControlView controller;
   private Switch ohlToggle;
@@ -39,7 +39,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_music_player);
+    setContentView(R.layout.activity_media_player);
     controller = (PlaybackControlView) findViewById(R.id.player_controller);
     ohlToggle = (Switch) findViewById(R.id.ohl_toggle);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -67,7 +67,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
   protected void onStart() {
     super.onStart();
     playItemStore.open();
-    final MusicItem item = playItemStore.findByPath(getPath());
+    final MediaItem item = playItemStore.findByPath(getPath());
     ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
     ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
   }
@@ -91,8 +91,8 @@ public class MusicPlayerActivity extends AppCompatActivity {
 
   private static final String EXTRA_PATH = "path";
 
-  public static Intent createIntent(@NonNull Context context, @NonNull MusicItem item) {
-    final Intent intent = new Intent(context, MusicPlayerActivity.class);
+  public static Intent createIntent(@NonNull Context context, @NonNull MediaItem item) {
+    final Intent intent = new Intent(context, MediaPlayerActivity.class);
     intent.setData(item.getUri());
     intent.putExtra(EXTRA_PATH, item.getPath());
     return intent;
@@ -106,7 +106,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
     return getIntent().getStringExtra(EXTRA_PATH);
   }
 
-  public static void start(@NonNull Context context, @NonNull MusicItem item) {
+  public static void start(@NonNull Context context, @NonNull MediaItem item) {
     final Intent intent = createIntent(context, item);
     context.startActivity(intent);
   }

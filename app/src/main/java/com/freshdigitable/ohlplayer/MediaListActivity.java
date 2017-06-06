@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MusicListActivity extends AppCompatActivity {
+public class MediaListActivity extends AppCompatActivity {
 
   private RecyclerView listView;
   private PlayItemStore playItemStore;
@@ -28,7 +28,7 @@ public class MusicListActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_music_list);
+    setContentView(R.layout.activity_media_list);
 
     listView = (RecyclerView) findViewById(R.id.list);
     final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
@@ -109,19 +109,19 @@ public class MusicListActivity extends AppCompatActivity {
 
     @Override
     public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
-      final View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.view_music_list_item, parent, false);
+      final View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.view_media_list_item, parent, false);
       return new Holder(v);
     }
 
     @Override
     public void onBindViewHolder(Holder holder, int position) {
-      final MusicItem item = playItemStore.get(position);
+      final MediaItem item = playItemStore.get(position);
       holder.title.setText(item.getTitle());
       holder.artist.setText(item.getArtist());
       holder.itemView.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-          MusicPlayerActivity.start(v.getContext(), item);
+          MediaPlayerActivity.start(v.getContext(), item);
         }
       });
     }

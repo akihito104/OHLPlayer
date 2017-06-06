@@ -13,13 +13,13 @@ import io.realm.annotations.RealmClass;
  * Created by akihit on 2017/04/28.
  */
 @RealmClass
-public class MusicItem implements Serializable, Comparable<MusicItem>, RealmModel {
+public class MediaItem implements Serializable, Comparable<MediaItem>, RealmModel {
   @PrimaryKey
   private String path;
   private String title;
   private String artist;
 
-  public MusicItem() { }
+  public MediaItem() { }
 
   public String getPath() {
     return path;
@@ -37,14 +37,14 @@ public class MusicItem implements Serializable, Comparable<MusicItem>, RealmMode
     return artist;
   }
 
-  private MusicItem(Builder builder) {
+  private MediaItem(Builder builder) {
     this.path = builder.path;
     this.title = builder.title;
     this.artist = builder.artist;
   }
 
   @Override
-  public int compareTo(@NonNull MusicItem o) {
+  public int compareTo(@NonNull MediaItem o) {
     return this.title.compareTo(o.title);
   }
 
@@ -67,8 +67,8 @@ public class MusicItem implements Serializable, Comparable<MusicItem>, RealmMode
       return this;
     }
 
-    MusicItem build() {
-      return new MusicItem(this);
+    MediaItem build() {
+      return new MediaItem(this);
     }
   }
 }
