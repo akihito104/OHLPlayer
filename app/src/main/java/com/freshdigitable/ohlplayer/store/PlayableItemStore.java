@@ -1,8 +1,8 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.store;
 
-import android.media.MediaMetadataRetriever;
+import android.support.annotation.NonNull;
 
-import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.OrderedCollectionChangeSet;
@@ -15,25 +15,25 @@ import io.realm.RealmResults;
  * Created by akihit on 2017/05/27.
  */
 
-public class PlayItemStore {
+public class PlayableItemStore {
   private Realm playList;
   private final RealmConfiguration realmConfig = new RealmConfiguration.Builder()
       .name("play_list")
       .deleteRealmIfMigrationNeeded()
       .build();
-  private RealmResults<MediaItem> mediaItems;
+  private RealmResults<PlayableItemRealm> mediaItems;
 
   public void open() {
     playList = Realm.getInstance(realmConfig);
     mediaItems = playList
-        .where(MediaItem.class)
+        .where(PlayableItemRealm.class)
         .findAllSorted("title");
   }
 
-  public void addEventListener(final StoreEventListener l) {
-    mediaItems.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<MediaItem>>() {
+  public void addEventListener(@NonNull final StoreEventListener l) {
+    mediaItems.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<PlayableItemRealm>>() {
       @Override
-      public void onChange(RealmResults<MediaItem> mediaItems, OrderedCollectionChangeSet changeSet) {
+      public void onChange(RealmResults<PlayableItemRealm> mediaItems, OrderedCollectionChangeSet changeSet) {
         for (OrderedCollectionChangeSet.Range r : changeSet.getInsertionRanges()) {
           l.onStoreUpdate(EventType.INSERT, r.startIndex, r.length);
         }
@@ -47,29 +47,31 @@ public class PlayItemStore {
     });
   }
 
-  public void registerIfAbsent(final List<File> files) {
-    for (final File file : files) {
-      final String path = file.getAbsolutePath();
-      final MediaItem item = findByPath(path);
-      if (item != null) {
+  public void registerIfAbsent(@NonNull final List<PlayableItem> items) {
+    if (items.isEmpty()) {
+      return;
+    }
+
+    final List<PlayableItemRealm> insertedItems = new ArrayList<>();
+    for (PlayableItem i : items) {
+      if (findByPath(i.getPath()) != null) {
         continue;
       }
-      final MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
-      metadataRetriever.setDataSource(path);
-      final String title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-      final String artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-      metadataRetriever.release();
-      playList.executeTransactionAsync(new Realm.Transaction() {
-        @Override
-        public void execute(Realm realm) {
-          final MediaItem mediaItem = new MediaItem.Builder(path).title(title).artist(artist).build();
-          realm.insert(mediaItem);
-        }
-      });
+      insertedItems.add(new PlayableItemRealm(i));
     }
+    if (insertedItems.isEmpty()) {
+      return;
+    }
+
+    playList.executeTransactionAsync(new Realm.Transaction() {
+      @Override
+      public void execute(Realm realm) {
+        realm.insert(insertedItems);
+      }
+    });
   }
 
-  public MediaItem get(int index) {
+  public PlayableItem get(int index) {
     return mediaItems.get(index);
   }
 
@@ -82,8 +84,8 @@ public class PlayItemStore {
     playList.close();
   }
 
-  public MediaItem findByPath(String path) {
-    return playList.where(MediaItem.class)
+  public PlayableItem findByPath(String path) {
+    return playList.where(PlayableItemRealm.class)
         .equalTo("path", path)
         .findFirst();
   }

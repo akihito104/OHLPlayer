@@ -14,6 +14,8 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import com.freshdigitable.ohlplayer.store.PlayableItemStore;
+import com.freshdigitable.ohlplayer.store.PlayableItem;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -34,7 +36,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
   private SimpleExoPlayer simpleExoPlayer;
   private PlaybackControlView controller;
   private Switch ohlToggle;
-  private final PlayItemStore playItemStore = new PlayItemStore();
+  private final PlayableItemStore playableItemStore = new PlayableItemStore();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -66,8 +68,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
   @Override
   protected void onStart() {
     super.onStart();
-    playItemStore.open();
-    final MediaItem item = playItemStore.findByPath(getPath());
+    playableItemStore.open();
+    final PlayableItem item = playableItemStore.findByPath(getPath());
     ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
     ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
   }
@@ -75,7 +77,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
   @Override
   protected void onStop() {
     super.onStop();
-    playItemStore.close();
+    playableItemStore.close();
   }
 
   @Override
@@ -91,7 +93,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
   private static final String EXTRA_PATH = "path";
 
-  public static Intent createIntent(@NonNull Context context, @NonNull MediaItem item) {
+  public static Intent createIntent(@NonNull Context context, @NonNull PlayableItem item) {
     final Intent intent = new Intent(context, MediaPlayerActivity.class);
     intent.setData(item.getUri());
     intent.putExtra(EXTRA_PATH, item.getPath());
@@ -106,7 +108,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     return getIntent().getStringExtra(EXTRA_PATH);
   }
 
-  public static void start(@NonNull Context context, @NonNull MediaItem item) {
+  public static void start(@NonNull Context context, @NonNull PlayableItem item) {
     final Intent intent = createIntent(context, item);
     context.startActivity(intent);
   }
