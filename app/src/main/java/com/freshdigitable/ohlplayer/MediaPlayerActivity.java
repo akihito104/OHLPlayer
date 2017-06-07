@@ -70,8 +70,10 @@ public class MediaPlayerActivity extends AppCompatActivity {
     super.onStart();
     playableItemStore.open();
     final PlayableItem item = playableItemStore.findByPath(getPath());
-    ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
-    ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
+    if (item != null) {
+      ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
+      ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
+    }
   }
 
   @Override
