@@ -2,6 +2,7 @@ package com.freshdigitable.ohlplayer;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.support.annotation.NonNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,11 +16,19 @@ import java.util.concurrent.Callable;
 public class ImpulseResponse {
   private double[] impulseRes;
 
-  public static ImpulseResponse loadImpulseResponse(Context context, String name) throws IOException {
-    return loadImpulseResponse(context.getAssets().openFd(name));
+  static ImpulseResponse load(@NonNull Context context,
+                              @NonNull DIRECTION dir,
+                              @NonNull CHANNEL ch,
+                              @NonNull SAMPLING_FREQ freq) throws IOException {
+    final String name = "imp" + dir.name() + ch.name() + "_" + freq.getName() + "_20k.DDB";
+    return load(context, name);
   }
 
-  public static ImpulseResponse loadImpulseResponse(AssetFileDescriptor afd) throws IOException {
+  private static ImpulseResponse load(Context context, String name) throws IOException {
+    return load(context.getAssets().openFd(name));
+  }
+
+  private static ImpulseResponse load(AssetFileDescriptor afd) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate((int) afd.getLength()).order(ByteOrder.LITTLE_ENDIAN);
     FileChannel fc = null;
     int bufSize;
@@ -27,7 +36,7 @@ public class ImpulseResponse {
       fc = afd.createInputStream().getChannel();
       bufSize = fc.read(bb);
     } finally {
-      if (fc !=null){
+      if (fc != null) {
         fc.close();
       }
     }
@@ -124,5 +133,45 @@ public class ImpulseResponse {
         + ", edge> " + findFirstEdge()
         + ", pow>" + power()
         + ", max> " + maxAmp();
+  }
+
+  enum DIRECTION {
+    L30, R30, C
+  }
+
+  enum CHANNEL {
+    L, R
+  }
+
+  enum SAMPLING_FREQ {
+    HZ_44100(44100), HZ_48000(48000);
+
+    private final int freq;
+
+    SAMPLING_FREQ(int freq) {
+      this.freq = freq;
+    }
+
+    static boolean isCapable(int samplingFreq) {
+      for (SAMPLING_FREQ f : values()) {
+        if (f.freq == samplingFreq) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    String getName() {
+      return Integer.toString(freq);
+    }
+
+    static SAMPLING_FREQ valueOf(int freq) {
+      for (SAMPLING_FREQ f : values()) {
+        if (f.freq == freq) {
+          return f;
+        }
+      }
+      throw new IllegalArgumentException();
+    }
   }
 }

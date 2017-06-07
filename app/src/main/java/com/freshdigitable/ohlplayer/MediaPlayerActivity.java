@@ -5,17 +5,15 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.freshdigitable.ohlplayer.store.PlayableItemStore;
 import com.freshdigitable.ohlplayer.store.PlayableItem;
+import com.freshdigitable.ohlplayer.store.PlayableItemStore;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -29,9 +27,8 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
-import java.io.IOException;
-
 public class MediaPlayerActivity extends AppCompatActivity {
+  @SuppressWarnings("unused")
   private static final String TAG = MediaPlayerActivity.class.getSimpleName();
   private SimpleExoPlayer simpleExoPlayer;
   private PlaybackControlView controller;
@@ -47,8 +44,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     final OHLAudioProcessor ohlAudioProcessor = createProcessor(getApplicationContext());
-    if (ohlAudioProcessor == null) return;
-
     simpleExoPlayer = createPlayer(getApplicationContext(), ohlAudioProcessor);
     simpleExoPlayer.setVideoSurfaceView((SurfaceView) findViewById(R.id.player_surface_view));
     controller.setPlayer(simpleExoPlayer);
@@ -85,10 +80,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    if (simpleExoPlayer != null) {
-      simpleExoPlayer.stop();
-      simpleExoPlayer.release();
-    }
+    simpleExoPlayer.stop();
+    simpleExoPlayer.release();
     controller.setPlayer(null);
     ohlToggle.setOnCheckedChangeListener(null);
   }
@@ -115,16 +108,9 @@ public class MediaPlayerActivity extends AppCompatActivity {
     context.startActivity(intent);
   }
 
-  @Nullable
+  @NonNull
   private static OHLAudioProcessor createProcessor(@NonNull Context context) {
-    final ConvoTask convoTask;
-    try {
-      convoTask = StereoHRTFConvoTask.create(context);
-    } catch (IOException e) {
-      Log.e(TAG, "createProcessor: ", e);
-      return null;
-    }
-    return new OHLAudioProcessor(convoTask);
+    return new OHLAudioProcessor(context);
   }
 
   @NonNull

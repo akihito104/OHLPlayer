@@ -2,6 +2,10 @@ package com.freshdigitable.ohlplayer;
 
 import android.content.Context;
 
+import com.freshdigitable.ohlplayer.ImpulseResponse.CHANNEL;
+import com.freshdigitable.ohlplayer.ImpulseResponse.DIRECTION;
+import com.freshdigitable.ohlplayer.ImpulseResponse.SAMPLING_FREQ;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -21,8 +25,8 @@ public class CenterHRTFConvoTask implements ConvoTask {
   private ExecutorService executor = Executors.newFixedThreadPool(2);
 
   public static CenterHRTFConvoTask create(Context context) throws IOException {
-    final ImpulseResponse hrirL = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impCL_44100.DDB"));
-    final ImpulseResponse hrirR = ImpulseResponse.loadImpulseResponse(context.getAssets().openFd("impCR_44100.DDB"));
+    final ImpulseResponse hrirL = ImpulseResponse.load(context, DIRECTION.C, CHANNEL.L, SAMPLING_FREQ.HZ_44100);
+    final ImpulseResponse hrirR = ImpulseResponse.load(context, DIRECTION.C, CHANNEL.R, SAMPLING_FREQ.HZ_44100);
     return new CenterHRTFConvoTask(hrirL, hrirR);
   }
 

@@ -1,10 +1,13 @@
 package com.freshdigitable.ohlplayer;
 
+import android.content.Context;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -15,12 +18,15 @@ import java.nio.ShortBuffer;
 
 public class OHLAudioProcessor implements AudioProcessor {
   private static final String TAG = OHLAudioProcessor.class.getSimpleName();
-  private int channelCount = 0;
-  private final ConvoTask convoTask;
+  private final Context context;
 
-  OHLAudioProcessor(ConvoTask convoTask) {
-    this.convoTask = convoTask;
+  public OHLAudioProcessor(@NonNull Context context) {
+    this.context = context.getApplicationContext();
   }
+
+  private int channelCount = 0;
+  private int samplingFreq = 0;
+  private ConvoTask convoTask;
 
   @Override
   public boolean configure(int sampleRateHz, int channelCount, int encoding)
@@ -29,20 +35,34 @@ public class OHLAudioProcessor implements AudioProcessor {
       this.channelCount = 0;
       throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
     }
-    if (sampleRateHz != 44100 || channelCount > 2) {
+    if (!ImpulseResponse.SAMPLING_FREQ.isCapable(sampleRateHz) || channelCount > 2) {
       this.channelCount = 0;
       throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
     }
-    if (this.channelCount == channelCount) {
-      return false;
+
+    boolean isUpdated = false;
+    if (this.samplingFreq != sampleRateHz) {
+      try {
+        convoTask = StereoHRTFConvoTask.create(context, sampleRateHz);
+        this.samplingFreq = sampleRateHz;
+        isUpdated = true;
+      } catch (IOException e) {
+        Log.e(TAG, "creating ConvoTask is failed...", e);
+        convoTask = null;
+        return false;
+      }
+    }
+    if (this.channelCount != channelCount) {
+      isUpdated = true;
     }
     this.channelCount = channelCount;
-    return true;
+    return isUpdated;
   }
 
   @Override
   public boolean isActive() {
-    return channelCount != 0;
+    return channelCount != 0
+        && convoTask != null;
   }
 
   @Override
