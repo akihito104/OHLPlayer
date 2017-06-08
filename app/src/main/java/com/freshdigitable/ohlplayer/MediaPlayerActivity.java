@@ -22,6 +22,7 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.PlaybackControlView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
@@ -45,6 +46,18 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
     final OHLAudioProcessor ohlAudioProcessor = createProcessor(getApplicationContext());
     simpleExoPlayer = createPlayer(getApplicationContext(), ohlAudioProcessor);
+    final AspectRatioFrameLayout surfaceContainer = (AspectRatioFrameLayout) findViewById(R.id.player_surface_view_container);
+    simpleExoPlayer.setVideoListener(new SimpleExoPlayer.VideoListener() {
+      @Override
+      public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+        float aspectRatio = height == 0 ? 1 : (width * pixelWidthHeightRatio) / height;
+        surfaceContainer.setAspectRatio(aspectRatio);
+      }
+
+      @Override
+      public void onRenderedFirstFrame() {
+      }
+    });
     simpleExoPlayer.setVideoSurfaceView((SurfaceView) findViewById(R.id.player_surface_view));
     controller.setPlayer(simpleExoPlayer);
     controller.show();
@@ -82,6 +95,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     super.onDestroy();
     simpleExoPlayer.stop();
     simpleExoPlayer.release();
+    simpleExoPlayer.setVideoListener(null);
     controller.setPlayer(null);
     ohlToggle.setOnCheckedChangeListener(null);
   }
