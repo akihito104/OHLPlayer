@@ -11,13 +11,14 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.freshdigitable.ohlplayer.store.PlayableItemStore;
 import com.freshdigitable.ohlplayer.store.PlayableItem;
+import com.freshdigitable.ohlplayer.store.PlayableItemStore;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -106,7 +107,7 @@ public class MediaListActivity extends AppCompatActivity {
       final String artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
       metadataRetriever.release();
       final PlayableItem item = new PlayableItem.Builder(path)
-          .title(title)
+          .title(TextUtils.isEmpty(title) ? new File(path).getName() : title)
           .artist(artist)
           .build();
       items.add(item);
