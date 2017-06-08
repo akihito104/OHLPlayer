@@ -20,7 +20,10 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MediaPlayerActivity">
+        <activity
+            android:name=".MediaPlayerActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <data android:scheme="http" android:mimeType="audio/*"/>
