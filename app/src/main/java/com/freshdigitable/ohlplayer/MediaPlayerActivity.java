@@ -3,14 +3,17 @@ package com.freshdigitable.ohlplayer;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Switch;
-import android.widget.TextView;
 
 import com.freshdigitable.ohlplayer.store.PlayableItem;
 import com.freshdigitable.ohlplayer.store.PlayableItemStore;
@@ -34,6 +37,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
   private SimpleExoPlayer simpleExoPlayer;
   private PlaybackControlView controller;
   private Switch ohlToggle;
+  private View overlayView;
   private final PlayableItemStore playableItemStore = new PlayableItemStore();
 
   @Override
@@ -42,7 +46,10 @@ public class MediaPlayerActivity extends AppCompatActivity {
     setContentView(R.layout.activity_media_player);
     controller = (PlaybackControlView) findViewById(R.id.player_controller);
     ohlToggle = (Switch) findViewById(R.id.ohl_toggle);
+    overlayView = findViewById(R.id.player_overlay);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    setSupportActionBar((Toolbar) findViewById(R.id.player_toolbar));
+    showSystemUI();
 
     final OHLAudioProcessor ohlAudioProcessor = createProcessor(getApplicationContext());
     simpleExoPlayer = createPlayer(getApplicationContext(), ohlAudioProcessor);
@@ -78,16 +85,45 @@ public class MediaPlayerActivity extends AppCompatActivity {
     super.onStart();
     playableItemStore.open();
     final PlayableItem item = playableItemStore.findByPath(getPath());
-    if (item != null) {
-      ((TextView) findViewById(R.id.player_title)).setText(item.getTitle());
-      ((TextView) findViewById(R.id.player_artist)).setText(item.getArtist());
+    final ActionBar supportActionBar = getSupportActionBar();
+    if (item != null && supportActionBar != null) {
+      supportActionBar.setTitle(item.getTitle());
+      supportActionBar.setSubtitle(item.getArtist());
     }
+
+    getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(
+        new View.OnSystemUiVisibilityChangeListener() {
+          @Override
+          public void onSystemUiVisibilityChange(int visibility) {
+            if (isSystemUIVisible(visibility)) {
+              showOverlayUI(supportActionBar);
+              controller.show();
+            } else {
+              hideOverlayUI(supportActionBar);
+              controller.hide();
+            }
+          }
+        });
+    overlayView.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        if (isSystemUIVisible()) {
+          hideSystemUI();
+          controller.hide();
+        } else {
+          showSystemUI();
+          controller.show();
+        }
+      }
+    });
   }
 
   @Override
   protected void onStop() {
     super.onStop();
     playableItemStore.close();
+    getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(null);
+    overlayView.setOnClickListener(null);
   }
 
   @Override
@@ -151,5 +187,71 @@ public class MediaPlayerActivity extends AppCompatActivity {
         = new DefaultDataSourceFactory(context, userAgent, bandwidthMeter);
     final DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
     return new ExtractorMediaSource(dataSource, dataSourceFactory, extractorsFactory, null, null);
+  }
+
+  private boolean isSystemUIVisible() {
+    return isSystemUIVisible(getWindow().getDecorView().getSystemUiVisibility());
+  }
+
+  private static boolean isSystemUIVisible(int visibility) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+      return (View.SYSTEM_UI_FLAG_FULLSCREEN & visibility) == 0;
+    } else {
+      return (View.SYSTEM_UI_FLAG_HIDE_NAVIGATION & visibility) == 0;
+    }
+  }
+
+  private void showSystemUI() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+      setSystemUiVisibility(
+          View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+              | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+              | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+      );
+    }
+    if (isInMultiWindowModeCompat()) {
+      showOverlayUI(getSupportActionBar());
+    }
+  }
+
+  private static void showOverlayUI(ActionBar actionBar) {
+    if (actionBar != null) {
+      actionBar.show();
+    }
+  }
+
+  private void hideSystemUI() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      setSystemUiVisibility(
+          View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+              | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+              | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+              | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+              | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+              | View.SYSTEM_UI_FLAG_IMMERSIVE
+      );
+    } else {
+      setSystemUiVisibility(
+          View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+      );
+    }
+    if (isInMultiWindowModeCompat()) {
+      hideOverlayUI(getSupportActionBar());
+    }
+  }
+
+  private static void hideOverlayUI(ActionBar actionBar) {
+    if (actionBar != null) {
+      actionBar.hide();
+    }
+  }
+
+  private void setSystemUiVisibility(int visibility) {
+    getWindow().getDecorView().setSystemUiVisibility(visibility);
+  }
+
+  private boolean isInMultiWindowModeCompat() {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+        && isInMultiWindowMode();
   }
 }

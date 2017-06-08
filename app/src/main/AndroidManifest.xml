@@ -22,6 +22,7 @@
 
         <activity
             android:name=".MediaPlayerActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             >
             <intent-filter>
