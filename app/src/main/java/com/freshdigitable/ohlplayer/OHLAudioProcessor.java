@@ -123,16 +123,16 @@ public class OHLAudioProcessor implements AudioProcessor {
     }
   }
 
-  private static final double THROUGH_FACTOR = 0.6; // XXX
+  private double throughFactor = 0.6;
 
   private void thru(short[] inBuf) {
     final int size = Math.min(buf.remaining() / 4, tail.size());
     for (int i = 0; i < size; i++) {
-      buf.putShort((short) (tail.getL(i) + inBuf[i * 2] * THROUGH_FACTOR));
-      buf.putShort((short) (tail.getR(i) + inBuf[i * 2 + 1] * THROUGH_FACTOR));
+      buf.putShort((short) (tail.getL(i) + inBuf[i * 2] * throughFactor));
+      buf.putShort((short) (tail.getR(i) + inBuf[i * 2 + 1] * throughFactor));
     }
     for (int i = size * 2; i < inBuf.length; i++) {
-      buf.putShort((short) (inBuf[i] * THROUGH_FACTOR));
+      buf.putShort((short) (inBuf[i] * throughFactor));
     }
     if (size < tail.size()) {
       AudioChannels newChannels = new AudioChannels(tail.size() - size);
@@ -151,7 +151,9 @@ public class OHLAudioProcessor implements AudioProcessor {
     final AudioChannels audioChannels = convoTask.convo(inBuf);
     audioChannels.productFactor(effectedFactor);
     audioChannels.add(tail);
-    effectedFactor *= audioChannels.checkClipping(LIMIT_VALUE);
+    final double ampFactor = audioChannels.checkClipping(LIMIT_VALUE);
+    effectedFactor *= ampFactor;
+    throughFactor *= ampFactor;
     for (int i = 0; i < windowSize; i++) {
       buf.putShort((short) audioChannels.getL(i));
       buf.putShort((short) audioChannels.getR(i));
