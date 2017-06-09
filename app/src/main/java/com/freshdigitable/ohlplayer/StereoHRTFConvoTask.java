@@ -1,6 +1,11 @@
 package com.freshdigitable.ohlplayer;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
+
+import com.freshdigitable.ohlplayer.ImpulseResponse.CHANNEL;
+import com.freshdigitable.ohlplayer.ImpulseResponse.DIRECTION;
+import com.freshdigitable.ohlplayer.ImpulseResponse.SAMPLING_FREQ;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -87,11 +92,16 @@ public class StereoHRTFConvoTask implements ConvoTask {
     executor.shutdown();
   }
 
-  public static StereoHRTFConvoTask create(Context context) throws IOException {
-    final ImpulseResponse hrirL30L = ImpulseResponse.loadImpulseResponse(context, "impL30L_44100_20k.DDB");
-    final ImpulseResponse hrirL30R = ImpulseResponse.loadImpulseResponse(context, "impL30R_44100_20k.DDB");
-    final ImpulseResponse hrirR30L = ImpulseResponse.loadImpulseResponse(context, "impR30L_44100_20k.DDB");
-    final ImpulseResponse hrirR30R = ImpulseResponse.loadImpulseResponse(context, "impR30R_44100_20k.DDB");
+  static StereoHRTFConvoTask create(@NonNull Context context, int samplingFreq) throws IOException {
+    return create(context, SAMPLING_FREQ.valueOf(samplingFreq));
+  }
+
+  private static StereoHRTFConvoTask create(@NonNull Context context,
+                                    @NonNull SAMPLING_FREQ freq) throws IOException {
+    final ImpulseResponse hrirL30L = ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.L, freq);
+    final ImpulseResponse hrirL30R = ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.R, freq);
+    final ImpulseResponse hrirR30L = ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.L, freq);
+    final ImpulseResponse hrirR30R = ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.R, freq);
     return new StereoHRTFConvoTask(hrirL30L, hrirL30R, hrirR30L, hrirR30R);
   }
 

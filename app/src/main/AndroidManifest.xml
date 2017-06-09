@@ -12,14 +12,28 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MusicListActivity">
+        <activity android:name=".MediaListActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".MusicPlayerActivity">
+
+        <activity
+            android:name=".MediaPlayerActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <data android:scheme="http" android:mimeType="audio/*"/>
+                <data android:scheme="http" android:mimeType="video/*"/>
+                <data android:scheme="file" android:mimeType="audio/*"/>
+                <data android:scheme="file" android:mimeType="video/*"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+            </intent-filter>
         </activity>
     </application>
 
