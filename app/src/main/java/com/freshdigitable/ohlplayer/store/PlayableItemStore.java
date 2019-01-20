@@ -27,7 +27,8 @@ public class PlayableItemStore {
     playList = Realm.getInstance(realmConfig);
     mediaItems = playList
         .where(PlayableItemRealm.class)
-        .findAllSorted("title");
+        .findAll()
+        .sort("title");
   }
 
   public void addEventListener(@NonNull final StoreEventListener l) {
