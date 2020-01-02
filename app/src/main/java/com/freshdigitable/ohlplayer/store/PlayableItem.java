@@ -1,7 +1,7 @@
 package com.freshdigitable.ohlplayer.store;
 
 import android.net.Uri;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * Created by akihit on 2017/06/06.

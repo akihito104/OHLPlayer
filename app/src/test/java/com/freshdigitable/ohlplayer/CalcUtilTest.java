@@ -3,15 +3,9 @@ package com.freshdigitable.ohlplayer;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
-/**
- * Example local unit test, which will execute on the development machine (host).
- *
- * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
- */
 public class CalcUtilTest {
   private static final int MAX_SIZE = 256;
   private final int[] input = new int[MAX_SIZE];
@@ -27,7 +21,7 @@ public class CalcUtilTest {
     for (int i : input) {
       directCurrent += i;
     }
-    assertThat(directCurrent, is(0L));
+    assertThat(directCurrent).isEqualTo(0L);
     final long start = System.nanoTime();
     expected = dft(input);
     final long end = System.nanoTime();
@@ -35,21 +29,22 @@ public class CalcUtilTest {
   }
 
   @Test
-  public void testFFT() throws Exception {
+  public void testFFT() {
     final long start = System.nanoTime();
     final ComplexArray actual = ComplexArray.calcFFT(input, input.length);
     final long end = System.nanoTime();
 
-    assertThat(actual.size(), is(expected.length));
+    assertThat(actual.size()).isEqualTo(expected.length);
     final String message = actual.toString();
     for (int i = 0; i < expected.length; i++) {
       final double diffReal = Math.abs(actual.getReal()[i] - expected[i].getReal());
-      assertTrue(message, diffReal < 10e-5);
+      assertWithMessage(message).that(diffReal).isLessThan(10e-5);
       final double diffImag = Math.abs(actual.getImag()[i] - expected[i].getImag());
-      assertTrue(message, diffImag < 10e-5);
+      assertWithMessage(message).that(diffImag).isLessThan(10e-5);
     }
     final long actualElapse = end - start;
-    assertTrue("fft: " + actualElapse + ", dft: " + elapse, actualElapse < elapse);
+    assertWithMessage("fft: " + actualElapse + ", dft: " + elapse)
+        .that(actualElapse).isLessThan(elapse);
   }
 
   private Complex[] dft(int[] input) {
