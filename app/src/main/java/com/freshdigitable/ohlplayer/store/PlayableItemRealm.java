@@ -1,7 +1,7 @@
 package com.freshdigitable.ohlplayer.store;
 
 import android.net.Uri;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import io.realm.RealmModel;
 import io.realm.annotations.PrimaryKey;

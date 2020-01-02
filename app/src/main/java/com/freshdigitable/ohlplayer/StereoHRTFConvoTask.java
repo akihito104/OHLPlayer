@@ -1,7 +1,7 @@
 package com.freshdigitable.ohlplayer;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.freshdigitable.ohlplayer.ImpulseResponse.CHANNEL;
 import com.freshdigitable.ohlplayer.ImpulseResponse.DIRECTION;
