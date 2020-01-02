@@ -8,7 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.*;
+import static com.google.common.truth.Truth.assertThat;
 
 /**
  * Instrumentation test, which will execute on an Android device.
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
     // Context of the app under test.
     Context appContext = ApplicationProvider.getApplicationContext();
 
-    assertEquals("com.freshdigitable.ohlplayer", appContext.getPackageName());
+    assertThat(appContext.getPackageName()).isEqualTo("com.freshdigitable.ohlplayer");
   }
 }
