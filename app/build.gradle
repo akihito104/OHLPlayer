@@ -37,7 +37,7 @@ dependencies {
     releaseImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$versions.leak_canary"
     testImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$versions.leak_canary"
 
-    testImplementation 'junit:junit:4.12'
+    testImplementation "junit:junit:$versions.junit"
     testImplementation "androidx.test:core:$versions.test_core"
     testImplementation "androidx.test:runner:$versions.test_runner"
     testImplementation "androidx.test:rules:$versions.test_rule"
