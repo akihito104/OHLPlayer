@@ -5,6 +5,7 @@ import android.content.Context;
 import com.freshdigitable.ohlplayer.ImpulseResponse.CHANNEL;
 import com.freshdigitable.ohlplayer.ImpulseResponse.DIRECTION;
 import com.freshdigitable.ohlplayer.ImpulseResponse.SAMPLING_FREQ;
+import com.freshdigitable.ohlplayer.model.ComplexArray;
 
 import java.io.IOException;
 import java.util.Arrays;

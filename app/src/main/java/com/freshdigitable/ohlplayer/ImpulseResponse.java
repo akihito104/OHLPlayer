@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import androidx.annotation.NonNull;
 
+import com.freshdigitable.ohlplayer.model.ComplexArray;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

@@ -21,7 +21,8 @@ buildscript {
             test_rule        : '1.2.0',
             test_ext_junit   : '1.1.1',
             test_ext_truth   : '1.2.0',
-            test_truth       : '0.42'
+            test_truth       : '0.42',
+            espresso         : '3.1.0'
     ]
 
     dependencies {
