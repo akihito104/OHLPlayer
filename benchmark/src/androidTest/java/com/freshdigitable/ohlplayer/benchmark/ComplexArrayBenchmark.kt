@@ -16,7 +16,7 @@ class ComplexArrayBenchmark {
     val benchmarkRule = BenchmarkRule()
 
     private companion object {
-        private const val MAX_SIZE = 256
+        private const val MAX_SIZE = 4096
     }
 
     private val input = IntArray(MAX_SIZE)
