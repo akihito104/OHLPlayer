@@ -1,12 +1,11 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
 
 import android.content.Context;
 import androidx.annotation.NonNull;
 
-import com.freshdigitable.ohlplayer.ImpulseResponse.CHANNEL;
-import com.freshdigitable.ohlplayer.ImpulseResponse.DIRECTION;
-import com.freshdigitable.ohlplayer.ImpulseResponse.SAMPLING_FREQ;
-import com.freshdigitable.ohlplayer.model.ComplexArray;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.CHANNEL;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.DIRECTION;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.SAMPLING_FREQ;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -93,7 +92,7 @@ public class StereoHRTFConvoTask implements ConvoTask {
     executor.shutdown();
   }
 
-  static StereoHRTFConvoTask create(@NonNull Context context, int samplingFreq) throws IOException {
+  public static StereoHRTFConvoTask create(@NonNull Context context, int samplingFreq) throws IOException {
     return create(context, SAMPLING_FREQ.valueOf(samplingFreq));
   }
 

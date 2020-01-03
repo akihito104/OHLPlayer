@@ -1,5 +1,7 @@
 package com.freshdigitable.ohlplayer.model;
 
+import androidx.annotation.VisibleForTesting;
+
 import java.util.Arrays;
 
 /**
@@ -45,6 +47,7 @@ public class ComplexArray {
     System.arraycopy(sig, 0, this.real, 0, sig.length);
   }
 
+  @VisibleForTesting
   public static ComplexArray calcFFT(int[] sig, int fftSize) {
     final ComplexArray res = new ComplexArray(sig, fftSize);
     res.fft();

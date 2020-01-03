@@ -1,11 +1,10 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
 
 import android.content.Context;
 
-import com.freshdigitable.ohlplayer.ImpulseResponse.CHANNEL;
-import com.freshdigitable.ohlplayer.ImpulseResponse.DIRECTION;
-import com.freshdigitable.ohlplayer.ImpulseResponse.SAMPLING_FREQ;
-import com.freshdigitable.ohlplayer.model.ComplexArray;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.CHANNEL;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.DIRECTION;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.SAMPLING_FREQ;
 
 import java.io.IOException;
 import java.util.Arrays;
