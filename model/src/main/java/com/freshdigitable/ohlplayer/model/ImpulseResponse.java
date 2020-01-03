@@ -1,4 +1,4 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
@@ -135,15 +135,15 @@ public class ImpulseResponse {
         + ", max> " + maxAmp();
   }
 
-  enum DIRECTION {
+  public enum DIRECTION {
     L30, R30, C
   }
 
-  enum CHANNEL {
+  public enum CHANNEL {
     L, R
   }
 
-  enum SAMPLING_FREQ {
+  public enum SAMPLING_FREQ {
     HZ_44100(44100), HZ_48000(48000);
 
     private final int freq;
@@ -152,7 +152,7 @@ public class ImpulseResponse {
       this.freq = freq;
     }
 
-    static boolean isCapable(int samplingFreq) {
+    public static boolean isCapable(int samplingFreq) {
       for (SAMPLING_FREQ f : values()) {
         if (f.freq == samplingFreq) {
           return true;

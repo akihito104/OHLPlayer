@@ -26,6 +26,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(":model")
 
     implementation "com.google.android.exoplayer:exoplayer-core:$versions.exo_player"
     implementation "com.google.android.exoplayer:exoplayer-ui:$versions.exo_player"
@@ -37,7 +38,7 @@ dependencies {
     releaseImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$versions.leak_canary"
     testImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$versions.leak_canary"
 
-    testImplementation 'junit:junit:4.12'
+    testImplementation "junit:junit:$versions.junit"
     testImplementation "androidx.test:core:$versions.test_core"
     testImplementation "androidx.test:runner:$versions.test_runner"
     testImplementation "androidx.test:rules:$versions.test_rule"
@@ -51,7 +52,7 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$versions.test_ext_junit"
     androidTestImplementation "androidx.test.ext:truth:$versions.test_ext_truth"
     androidTestImplementation "com.google.truth:truth:$versions.test_truth"
-    androidTestImplementation('androidx.test.espresso:espresso-core:3.1.0', {
+    androidTestImplementation("androidx.test.espresso:espresso-core:$versions.espresso", {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }

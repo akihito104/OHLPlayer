@@ -1,4 +1,4 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
 
 /**
  * Created by akihit on 2017/05/07.

@@ -1,0 +1,54 @@
+apply plugin: 'com.android.library'
+apply plugin: 'androidx.benchmark'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.2"
+
+    defaultConfig {
+        minSdkVersion 18
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner 'androidx.benchmark.junit4.AndroidBenchmarkRunner'
+    }
+
+    buildTypes {
+        debug {
+            // Since debuggable can't be modified by gradle for library modules,
+            // it must be done in a manifest - see src/androidTest/AndroidManifest.xml
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'benchmark-proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+    aaptOptions {
+        noCompress ''
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(":model")
+
+    // Add your dependencies here. Note that you cannot benchmark code
+    // in an app module this way - you will need to move any code you
+    // want to benchmark to a library module:
+    // https://developer.android.com/studio/projects/android-library#Convert
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    androidTestImplementation "junit:junit:$versions.junit"
+    androidTestImplementation "androidx.test:runner:$versions.test_runner"
+    androidTestImplementation "androidx.test.ext:junit:$versions.test_ext_junit"
+    androidTestImplementation "androidx.benchmark:benchmark-junit4:1.0.0"
+}

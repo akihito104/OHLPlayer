@@ -1,4 +1,4 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
 
 import org.junit.Before;
 import org.junit.Test;

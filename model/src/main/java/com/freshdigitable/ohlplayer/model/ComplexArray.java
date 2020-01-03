@@ -1,4 +1,6 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
+
+import androidx.annotation.VisibleForTesting;
 
 import java.util.Arrays;
 
@@ -14,7 +16,7 @@ public class ComplexArray {
   private final double[] cos;
   private final int[] reverse;
 
-  ComplexArray(int size) {
+  public ComplexArray(int size) {
     this.real = new double[size];
     this.imag = new double[size];
     this.size = size;
@@ -45,19 +47,20 @@ public class ComplexArray {
     System.arraycopy(sig, 0, this.real, 0, sig.length);
   }
 
-  static ComplexArray calcFFT(int[] sig, int fftSize) {
+  @VisibleForTesting
+  public static ComplexArray calcFFT(int[] sig, int fftSize) {
     final ComplexArray res = new ComplexArray(sig, fftSize);
     res.fft();
     return res;
   }
 
-  static ComplexArray calcFFT(double[] sig, int fftSize) {
+  public static ComplexArray calcFFT(double[] sig, int fftSize) {
     final ComplexArray res = new ComplexArray(sig, fftSize);
     res.fft();
     return res;
   }
 
-  void fft(short[] in) {
+  public void fft(short[] in) {
     for (int i = 0; i < in.length; i++) {
       real[i] = in[i];
     }
@@ -66,7 +69,7 @@ public class ComplexArray {
     fft();
   }
 
-  void fft() {
+  public void fft() {
     int[] tmpIndex = new int[4];
     double[] tmpRe = new double[4], tmpIm = new double[4];
     double wRe, wIm, re0, im0;
@@ -136,7 +139,7 @@ public class ComplexArray {
     return reverse;
   }
 
-  void ifft() {
+  public void ifft() {
     conjugate();
     fft();
     for (int i = 0; i < size; i++) {
@@ -145,7 +148,7 @@ public class ComplexArray {
     }
   }
 
-  void product(ComplexArray a, ComplexArray b) {
+  public void product(ComplexArray a, ComplexArray b) {
     productAll(this, a, b);
   }
 
@@ -176,13 +179,13 @@ public class ComplexArray {
     imag[size / 2] *= -1;
   }
 
-  static int calcFFTSize(int resSize) {
+  public static int calcFFTSize(int resSize) {
     final int radix = (int) (Math.log10(FFT_RADIX) / Math.log10(2));
     final int shift = (int) (Math.log10(resSize) / Math.log10(FFT_RADIX) + 1);
     return (int) Math.pow(2, radix * shift);
   }
 
-  int size() {
+  public int size() {
     return size;
   }
 

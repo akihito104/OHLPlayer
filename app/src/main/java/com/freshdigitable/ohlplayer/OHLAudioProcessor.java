@@ -4,6 +4,10 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import android.util.Log;
 
+import com.freshdigitable.ohlplayer.model.AudioChannels;
+import com.freshdigitable.ohlplayer.model.ConvoTask;
+import com.freshdigitable.ohlplayer.model.ImpulseResponse;
+import com.freshdigitable.ohlplayer.model.StereoHRTFConvoTask;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 

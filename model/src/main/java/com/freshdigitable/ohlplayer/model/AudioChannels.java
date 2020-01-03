@@ -1,4 +1,4 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer.model;
 
 import android.util.Log;
 
@@ -16,11 +16,11 @@ public class AudioChannels {
     this.chR = chR;
   }
 
-  AudioChannels(int size) {
+  public AudioChannels(int size) {
     this(new int[size], new int[size]);
   }
 
-  AudioChannels() {
+  public AudioChannels() {
     this(0);
   }
 
@@ -32,24 +32,24 @@ public class AudioChannels {
     }
   }
 
-  void add(AudioChannels adder) {
+  public void add(AudioChannels adder) {
     add(adder.chL, adder.chR);
   }
 
-  int size() {
+  public int size() {
     return chL.length;
   }
 
-  void copyFrom(AudioChannels src, int srcFrom, int distFrom, int distLen) {
+  public void copyFrom(AudioChannels src, int srcFrom, int distFrom, int distLen) {
     System.arraycopy(src.chL, srcFrom, chL, distFrom, distLen);
     System.arraycopy(src.chR, srcFrom, chR, distFrom, distLen);
   }
 
-  int getL(int i) {
+  public int getL(int i) {
     return chL[i];
   }
 
-  int getR(int i) {
+  public int getR(int i) {
     return chR[i];
   }
 
