@@ -1,16 +1,12 @@
 apply plugin: 'com.android.library'
 apply plugin: 'androidx.benchmark'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.2"
+    compileSdkVersion 33
 
     defaultConfig {
         minSdkVersion 18
-        targetSdkVersion 29
-        versionCode 1
-        versionName "1.0"
+        targetSdkVersion 33
 
         testInstrumentationRunner 'androidx.benchmark.junit4.AndroidBenchmarkRunner'
     }
