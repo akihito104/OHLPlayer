@@ -85,26 +85,23 @@ public class MediaListActivity extends AppCompatActivity {
       return Collections.emptyList();
     }
 
-    final List<PlayableItem> items = new ArrayList<>();
-    for (final Uri uri : files) {
-      final MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
-      metadataRetriever.setDataSource(getApplicationContext(), uri);
-      final String title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-      final String artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-      try {
-        metadataRetriever.release();
-      } catch (IOException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
+    try (final MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever()) {
+      final List<PlayableItem> items = new ArrayList<>();
+      for (final Uri uri : files) {
+        metadataRetriever.setDataSource(getApplicationContext(), uri);
+        final String title = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+        final String artist = metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+        final String path = uri.toString();
+        final PlayableItem item = new PlayableItem.Builder(path)
+                .title(TextUtils.isEmpty(title) ? new File(path).getName() : title)
+                .artist(artist)
+                .build();
+        items.add(item);
       }
-      final String path = uri.toString();
-      final PlayableItem item = new PlayableItem.Builder(path)
-          .title(TextUtils.isEmpty(title) ? new File(path).getName() : title)
-          .artist(artist)
-          .build();
-      items.add(item);
+      return items;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    return items;
   }
 
   @NonNull
