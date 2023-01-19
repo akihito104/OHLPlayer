@@ -45,6 +45,7 @@ captures/
 .idea/tasks.xml
 .idea/vcs.xml
 .idea/caches
+.idea/jarRepositories.xml
 projectFilesBackup/
 # Keystore files
 *.jks

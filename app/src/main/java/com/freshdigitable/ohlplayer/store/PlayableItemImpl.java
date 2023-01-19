@@ -8,9 +8,9 @@ import androidx.annotation.NonNull;
  */
 
 class PlayableItemImpl implements PlayableItem {
-  private String path;
-  private String title;
-  private String artist;
+  private final String path;
+  private final String title;
+  private final String artist;
 
   @Override
   public String getPath() {

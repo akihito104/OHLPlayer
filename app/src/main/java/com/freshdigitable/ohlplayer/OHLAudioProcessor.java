@@ -33,50 +33,37 @@ public class OHLAudioProcessor implements AudioProcessor {
   private ConvoTask convoTask;
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, int encoding)
-      throws UnhandledFormatException {
+  public AudioFormat configure(AudioFormat inputAudioFormat) throws UnhandledAudioFormatException {
+    final int encoding = inputAudioFormat.encoding;
+    final int sampleRateHz = inputAudioFormat.sampleRate;
+    final int channelCount = inputAudioFormat.channelCount;
     if (encoding != C.ENCODING_PCM_16BIT) {
       this.channelCount = 0;
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+      throw new UnhandledAudioFormatException(inputAudioFormat);
     }
     if (!ImpulseResponse.SAMPLING_FREQ.isCapable(sampleRateHz) || channelCount > 2) {
       this.channelCount = 0;
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+      throw new UnhandledAudioFormatException(inputAudioFormat);
     }
 
-    boolean isUpdated = false;
     if (this.samplingFreq != sampleRateHz) {
       try {
         convoTask = StereoHRTFConvoTask.create(context, sampleRateHz);
         this.samplingFreq = sampleRateHz;
-        isUpdated = true;
       } catch (IOException e) {
         Log.e(TAG, "creating ConvoTask is failed...", e);
         convoTask = null;
-        return false;
+        return null;
       }
     }
-    if (this.channelCount != channelCount) {
-      isUpdated = true;
-    }
     this.channelCount = channelCount;
-    return isUpdated;
+    return new AudioFormat(sampleRateHz, 2, C.ENCODING_PCM_16BIT);
   }
 
   @Override
   public boolean isActive() {
     return channelCount != 0
         && convoTask != null;
-  }
-
-  @Override
-  public int getOutputChannelCount() {
-    return 2;
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return C.ENCODING_PCM_16BIT;
   }
 
   private ByteBuffer buf = EMPTY_BUFFER;

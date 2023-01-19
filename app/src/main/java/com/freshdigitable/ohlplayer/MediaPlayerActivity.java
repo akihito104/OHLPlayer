@@ -5,38 +5,38 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
-import android.widget.Switch;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
 import com.freshdigitable.ohlplayer.store.PlayableItem;
 import com.freshdigitable.ohlplayer.store.PlayableItemStore;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.audio.AudioProcessor;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.audio.AudioSink;
+import com.google.android.exoplayer2.audio.DefaultAudioSink;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.android.exoplayer2.ui.PlaybackControlView;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.ui.PlayerControlView;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSource;
+import com.google.android.exoplayer2.video.VideoSize;
 
 public class MediaPlayerActivity extends AppCompatActivity {
   @SuppressWarnings("unused")
   private static final String TAG = MediaPlayerActivity.class.getSimpleName();
-  private SimpleExoPlayer simpleExoPlayer;
-  private PlaybackControlView controller;
-  private Switch ohlToggle;
+  private ExoPlayer simpleExoPlayer;
+  private PlayerControlView controller;
+  private SwitchCompat ohlToggle;
   private View overlayView;
   private final PlayableItemStore playableItemStore = new PlayableItemStore();
 
@@ -44,20 +44,23 @@ public class MediaPlayerActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_media_player);
-    controller = (PlaybackControlView) findViewById(R.id.player_controller);
-    ohlToggle = (Switch) findViewById(R.id.ohl_toggle);
+    controller = findViewById(R.id.player_controller);
+    ohlToggle = findViewById(R.id.ohl_toggle);
     overlayView = findViewById(R.id.player_overlay);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    setSupportActionBar((Toolbar) findViewById(R.id.player_toolbar));
+    setSupportActionBar(findViewById(R.id.player_toolbar));
     showSystemUI();
 
     final OHLAudioProcessor ohlAudioProcessor = createProcessor(getApplicationContext());
     simpleExoPlayer = createPlayer(getApplicationContext(), ohlAudioProcessor);
-    final AspectRatioFrameLayout surfaceContainer = (AspectRatioFrameLayout) findViewById(R.id.player_surface_view_container);
-    simpleExoPlayer.setVideoListener(new SimpleExoPlayer.VideoListener() {
+    final AspectRatioFrameLayout surfaceContainer = findViewById(R.id.player_surface_view_container);
+    simpleExoPlayer.addListener(new Player.Listener() {
       @Override
-      public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-        float aspectRatio = height == 0 ? 1 : (width * pixelWidthHeightRatio) / height;
+      public void onVideoSizeChanged(@NonNull VideoSize videoSize) {
+        final int width = videoSize.width;
+        final int height = videoSize.height;
+        final float pixelWidthHeightRatio = videoSize.pixelWidthHeightRatio;
+        final float aspectRatio = height == 0 ? 1 : (width * pixelWidthHeightRatio) / height;
         surfaceContainer.setAspectRatio(aspectRatio);
       }
 
@@ -68,16 +71,12 @@ public class MediaPlayerActivity extends AppCompatActivity {
     simpleExoPlayer.setVideoSurfaceView((SurfaceView) findViewById(R.id.player_surface_view));
     controller.setPlayer(simpleExoPlayer);
     controller.show();
-    ohlToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-      @Override
-      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        ohlAudioProcessor.setEnabled(isChecked);
-      }
-    });
+    ohlToggle.setOnCheckedChangeListener((buttonView, isChecked) -> ohlAudioProcessor.setEnabled(isChecked));
 
-    final ExtractorMediaSource extractorMediaSource
+    final MediaSource extractorMediaSource
         = createExtractorMediaSource(getApplicationContext(), getUri());
-    simpleExoPlayer.prepare(extractorMediaSource);
+    simpleExoPlayer.setMediaSource(extractorMediaSource);
+    simpleExoPlayer.prepare();
   }
 
   @Override
@@ -92,28 +91,22 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(
-        new View.OnSystemUiVisibilityChangeListener() {
-          @Override
-          public void onSystemUiVisibilityChange(int visibility) {
-            if (isSystemUIVisible(visibility)) {
-              showOverlayUI(supportActionBar);
-              controller.show();
-            } else {
-              hideOverlayUI(supportActionBar);
-              controller.hide();
-            }
-          }
-        });
-    overlayView.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        if (isSystemUIVisible()) {
-          hideSystemUI();
-          controller.hide();
-        } else {
-          showSystemUI();
-          controller.show();
-        }
+            visibility -> {
+              if (isSystemUIVisible(visibility)) {
+                showOverlayUI(supportActionBar);
+                controller.show();
+              } else {
+                hideOverlayUI(supportActionBar);
+                controller.hide();
+              }
+            });
+    overlayView.setOnClickListener(v -> {
+      if (isSystemUIVisible()) {
+        hideSystemUI();
+        controller.hide();
+      } else {
+        showSystemUI();
+        controller.show();
       }
     });
   }
@@ -131,7 +124,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
     super.onDestroy();
     simpleExoPlayer.stop();
     simpleExoPlayer.release();
-    simpleExoPlayer.setVideoListener(null);
     controller.setPlayer(null);
     ohlToggle.setOnCheckedChangeListener(null);
   }
@@ -164,29 +156,27 @@ public class MediaPlayerActivity extends AppCompatActivity {
   }
 
   @NonNull
-  private static SimpleExoPlayer createPlayer(@NonNull Context context,
+  private static ExoPlayer createPlayer(@NonNull Context context,
                                               @NonNull final OHLAudioProcessor ohlAudioProcessor) {
-    final TrackSelector trackSelector = new DefaultTrackSelector();
     final DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(context) {
       @Override
-      protected AudioProcessor[] buildAudioProcessors() {
-        return new AudioProcessor[]{ohlAudioProcessor};
+      protected AudioSink buildAudioSink(Context context, boolean enableFloatOutput, boolean enableAudioTrackPlaybackParams, boolean enableOffload) {
+        return new DefaultAudioSink.Builder()
+                .setAudioProcessorChain(new DefaultAudioSink.DefaultAudioProcessorChain(ohlAudioProcessor))
+                .build();
       }
     };
-    return ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector);
+    return new ExoPlayer.Builder(context, renderersFactory).build();
   }
 
   private static final String USER_AGENT_NAME = "ohlplayer";
 
   @NonNull
-  private static ExtractorMediaSource createExtractorMediaSource(@NonNull Context context,
-                                                                 @NonNull Uri dataSource) {
-    final DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-    final String userAgent = Util.getUserAgent(context, USER_AGENT_NAME);
-    final DefaultDataSourceFactory dataSourceFactory
-        = new DefaultDataSourceFactory(context, userAgent, bandwidthMeter);
-    final DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-    return new ExtractorMediaSource(dataSource, dataSourceFactory, extractorsFactory, null, null);
+  private static MediaSource createExtractorMediaSource(@NonNull Context context,
+                                                        @NonNull Uri dataSource) {
+    final DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(context);
+    return new ProgressiveMediaSource.Factory(dataSourceFactory)
+            .createMediaSource(MediaItem.fromUri(dataSource));
   }
 
   private boolean isSystemUIVisible() {
@@ -194,21 +184,15 @@ public class MediaPlayerActivity extends AppCompatActivity {
   }
 
   private static boolean isSystemUIVisible(int visibility) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      return (View.SYSTEM_UI_FLAG_FULLSCREEN & visibility) == 0;
-    } else {
-      return (View.SYSTEM_UI_FLAG_HIDE_NAVIGATION & visibility) == 0;
-    }
+    return (View.SYSTEM_UI_FLAG_FULLSCREEN & visibility) == 0;
   }
 
   private void showSystemUI() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      setSystemUiVisibility(
-          View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-              | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-              | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-      );
-    }
+    setSystemUiVisibility(
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+    );
     if (isInMultiWindowModeCompat()) {
       showOverlayUI(getSupportActionBar());
     }

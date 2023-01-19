@@ -44,7 +44,7 @@
             android:background="#8ddd"
             android:text="OHL"
             />
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/ohl_toggle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -56,9 +56,9 @@
             android:layout_marginBottom="8dp"
             android:rotation="270"
             />
-        <com.google.android.exoplayer2.ui.PlaybackControlView
+        <com.google.android.exoplayer2.ui.PlayerControlView
             android:id="@+id/player_controller"
-            layout="@layout/exo_playback_control_view"
+            app:controller_layout_id="@layout/exo_player_control_view"
             android:layout_width="0dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toLeftOf="@id/player_sw_label"

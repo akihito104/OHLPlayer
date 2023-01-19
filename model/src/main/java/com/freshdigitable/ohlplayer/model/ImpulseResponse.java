@@ -68,12 +68,7 @@ public class ImpulseResponse {
   }
 
   public Callable<int[]> callableConvo(final ComplexArray sig, final int outSize) {
-    return new Callable<int[]>() {
-      @Override
-      public int[] call() throws Exception {
-        return convo(sig, outSize);
-      }
-    };
+    return () -> convo(sig, outSize);
   }
 
   private ImpulseResponse(double[] ir) {
@@ -127,6 +122,7 @@ public class ImpulseResponse {
     return Math.sqrt(max);
   }
 
+  @NonNull
   @Override
   public String toString() {
     return "len>" + impulseRes.length

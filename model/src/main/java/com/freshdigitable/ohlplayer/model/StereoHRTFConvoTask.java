@@ -78,12 +78,9 @@ public class StereoHRTFConvoTask implements ConvoTask {
   }
 
   private Callable<ComplexArray> callableFFT(final ComplexArray fft, final short[] input) {
-    return new Callable<ComplexArray>() {
-      @Override
-      public ComplexArray call() throws Exception {
-        fft.fft(input);
-        return fft;
-      }
+    return () -> {
+      fft.fft(input);
+      return fft;
     };
   }
 

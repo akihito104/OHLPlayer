@@ -1,13 +1,19 @@
-apply plugin: 'com.android.application'
-apply plugin: 'realm-android'
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
+}
+
+apply plugin: "realm-android"
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion "28.0.3"
+    compileSdkVersion 33
+    namespace "com.freshdigitable.ohlplayer"
+
     defaultConfig {
         applicationId "com.freshdigitable.ohlplayer"
         minSdkVersion 16
-        targetSdkVersion 28
+        targetSdkVersion 33
         versionCode 1
         versionName "0.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -22,11 +28,21 @@ android {
     aaptOptions {
         noCompress ''
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":model")
+
+    implementation 'io.realm:realm-gradle-plugin:10.11.1'
 
     implementation "com.google.android.exoplayer:exoplayer-core:$versions.exo_player"
     implementation "com.google.android.exoplayer:exoplayer-ui:$versions.exo_player"
@@ -35,8 +51,6 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:$versions.constraint_layout"
 
     debugImplementation "com.squareup.leakcanary:leakcanary-android:$versions.leak_canary"
-    releaseImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$versions.leak_canary"
-    testImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$versions.leak_canary"
 
     testImplementation "junit:junit:$versions.junit"
     testImplementation "androidx.test:core:$versions.test_core"
