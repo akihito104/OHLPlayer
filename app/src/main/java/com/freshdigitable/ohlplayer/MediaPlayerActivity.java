@@ -71,12 +71,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     simpleExoPlayer.setVideoSurfaceView((SurfaceView) findViewById(R.id.player_surface_view));
     controller.setPlayer(simpleExoPlayer);
     controller.show();
-    ohlToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-      @Override
-      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        ohlAudioProcessor.setEnabled(isChecked);
-      }
-    });
+    ohlToggle.setOnCheckedChangeListener((buttonView, isChecked) -> ohlAudioProcessor.setEnabled(isChecked));
 
     final MediaSource extractorMediaSource
         = createExtractorMediaSource(getApplicationContext(), getUri());
@@ -189,21 +184,15 @@ public class MediaPlayerActivity extends AppCompatActivity {
   }
 
   private static boolean isSystemUIVisible(int visibility) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      return (View.SYSTEM_UI_FLAG_FULLSCREEN & visibility) == 0;
-    } else {
-      return (View.SYSTEM_UI_FLAG_HIDE_NAVIGATION & visibility) == 0;
-    }
+    return (View.SYSTEM_UI_FLAG_FULLSCREEN & visibility) == 0;
   }
 
   private void showSystemUI() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-      setSystemUiVisibility(
-          View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-              | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-              | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-      );
-    }
+    setSystemUiVisibility(
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+    );
     if (isInMultiWindowModeCompat()) {
       showOverlayUI(getSupportActionBar());
     }

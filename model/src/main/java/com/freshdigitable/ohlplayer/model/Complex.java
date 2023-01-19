@@ -1,5 +1,7 @@
 package com.freshdigitable.ohlplayer.model;
 
+import androidx.annotation.NonNull;
+
 /**
  * Created by akihit on 2017/05/07.
  */
@@ -35,7 +37,7 @@ public class Complex {
     this.im += adder.im;
   }
 
-  void devideScalar(double d) {
+  void divideScalar(double d) {
     this.re /= d;
     this.im /= d;
   }
@@ -44,6 +46,7 @@ public class Complex {
     im = -im;
   }
 
+  @NonNull
   @Override
   public String toString() {
     return re + " + " + im + " i";

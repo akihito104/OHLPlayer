@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.OrderedCollectionChangeSet;
-import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -32,18 +31,15 @@ public class PlayableItemStore {
   }
 
   public void addEventListener(@NonNull final StoreEventListener l) {
-    mediaItems.addChangeListener(new OrderedRealmCollectionChangeListener<RealmResults<PlayableItemRealm>>() {
-      @Override
-      public void onChange(RealmResults<PlayableItemRealm> mediaItems, OrderedCollectionChangeSet changeSet) {
-        for (OrderedCollectionChangeSet.Range r : changeSet.getInsertionRanges()) {
-          l.onStoreUpdate(EventType.INSERT, r.startIndex, r.length);
-        }
-        for (OrderedCollectionChangeSet.Range r : changeSet.getChangeRanges()) {
-          l.onStoreUpdate(EventType.CHANGE, r.startIndex, r.length);
-        }
-        for (OrderedCollectionChangeSet.Range r : changeSet.getDeletionRanges()) {
-          l.onStoreUpdate(EventType.DELETE, r.startIndex, r.length);
-        }
+    mediaItems.addChangeListener((mediaItems, changeSet) -> {
+      for (OrderedCollectionChangeSet.Range r : changeSet.getInsertionRanges()) {
+        l.onStoreUpdate(EventType.INSERT, r.startIndex, r.length);
+      }
+      for (OrderedCollectionChangeSet.Range r : changeSet.getChangeRanges()) {
+        l.onStoreUpdate(EventType.CHANGE, r.startIndex, r.length);
+      }
+      for (OrderedCollectionChangeSet.Range r : changeSet.getDeletionRanges()) {
+        l.onStoreUpdate(EventType.DELETE, r.startIndex, r.length);
       }
     });
   }
@@ -64,12 +60,7 @@ public class PlayableItemStore {
       return;
     }
 
-    playList.executeTransactionAsync(new Realm.Transaction() {
-      @Override
-      public void execute(Realm realm) {
-        realm.insert(insertedItems);
-      }
-    });
+    playList.executeTransactionAsync(realm -> realm.insert(insertedItems));
   }
 
   public PlayableItem get(int index) {

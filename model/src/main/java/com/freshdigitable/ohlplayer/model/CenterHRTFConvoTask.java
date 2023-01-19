@@ -21,8 +21,9 @@ import java.util.concurrent.Future;
 public class CenterHRTFConvoTask implements ConvoTask {
   private short[] inBuf = new short[0];
   private ComplexArray inputFft = new ComplexArray(0);
-  private ImpulseResponse hrirL, hrirR;
-  private ExecutorService executor = Executors.newFixedThreadPool(2);
+  private final ImpulseResponse hrirL;
+  private final ImpulseResponse hrirR;
+  private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
   public static CenterHRTFConvoTask create(Context context) throws IOException {
     final ImpulseResponse hrirL = ImpulseResponse.load(context, DIRECTION.C, CHANNEL.L, SAMPLING_FREQ.HZ_44100);

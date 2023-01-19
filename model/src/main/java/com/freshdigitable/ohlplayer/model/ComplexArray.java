@@ -1,5 +1,6 @@
 package com.freshdigitable.ohlplayer.model;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
 import java.util.Arrays;
@@ -197,6 +198,7 @@ public class ComplexArray {
     return imag;
   }
 
+  @NonNull
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
