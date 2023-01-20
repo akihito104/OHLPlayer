@@ -1,42 +1,44 @@
-package com.freshdigitable.ohlplayer.store;
+package com.freshdigitable.ohlplayer.store
 
-import android.net.Uri;
-import androidx.annotation.NonNull;
+import android.net.Uri
 
 /**
  * Created by akihit on 2017/06/06.
  */
+interface PlayableItem : Comparable<PlayableItem?> {
+    val path: String
+    val title: String?
+    val artist: String?
+    val uri: Uri?
 
-public interface PlayableItem extends Comparable<PlayableItem> {
-  String getPath();
-
-  String getTitle();
-
-  String getArtist();
-
-  Uri getUri();
-
-  class Builder {
-    String path;
-    String title;
-    String artist;
-
-    public Builder(@NonNull String path) {
-      this.path = path;
+    override fun compareTo(other: PlayableItem?): Int {
+        if (other == null) {
+            return -1
+        }
+        if (title == null && other.title == null) {
+            return 0
+        }
+        return title?.compareTo(other.title ?: "") ?: -1
     }
 
-    public Builder title(String title) {
-      this.title = title;
-      return this;
-    }
+    override fun hashCode(): Int
+    override fun equals(other: Any?): Boolean
 
-    public Builder artist(String artist) {
-      this.artist = artist;
-      return this;
-    }
+    class Builder(var path: String) {
+        var title: String? = null
+        var artist: String? = null
+        fun title(title: String?): Builder {
+            this.title = title
+            return this
+        }
 
-    public PlayableItem build() {
-      return new PlayableItemImpl(this);
+        fun artist(artist: String?): Builder {
+            this.artist = artist
+            return this
+        }
+
+        fun build(): PlayableItem {
+            return PlayableItemImpl(this)
+        }
     }
-  }
 }

@@ -1,194 +1,181 @@
-package com.freshdigitable.ohlplayer;
+package com.freshdigitable.ohlplayer
 
-import android.content.Context;
-import androidx.annotation.NonNull;
-import android.util.Log;
-
-import com.freshdigitable.ohlplayer.model.AudioChannels;
-import com.freshdigitable.ohlplayer.model.ConvoTask;
-import com.freshdigitable.ohlplayer.model.ImpulseResponse;
-import com.freshdigitable.ohlplayer.model.StereoHRTFConvoTask;
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.audio.AudioProcessor;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
+import android.content.Context
+import android.util.Log
+import com.freshdigitable.ohlplayer.model.AudioChannels
+import com.freshdigitable.ohlplayer.model.ConvoTask
+import com.freshdigitable.ohlplayer.model.ImpulseResponse
+import com.freshdigitable.ohlplayer.model.StereoHRTFConvoTask
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.audio.AudioProcessor
+import com.google.android.exoplayer2.audio.AudioProcessor.UnhandledAudioFormatException
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.ShortBuffer
+import kotlin.math.min
 
 /**
  * Created by akihit on 2017/04/27.
  */
-
-public class OHLAudioProcessor implements AudioProcessor {
-  private static final String TAG = OHLAudioProcessor.class.getSimpleName();
-  private final Context context;
-
-  public OHLAudioProcessor(@NonNull Context context) {
-    this.context = context.getApplicationContext();
-  }
-
-  private int channelCount = 0;
-  private int samplingFreq = 0;
-  private ConvoTask convoTask;
-
-  @Override
-  public AudioFormat configure(AudioFormat inputAudioFormat) throws UnhandledAudioFormatException {
-    final int encoding = inputAudioFormat.encoding;
-    final int sampleRateHz = inputAudioFormat.sampleRate;
-    final int channelCount = inputAudioFormat.channelCount;
-    if (encoding != C.ENCODING_PCM_16BIT) {
-      this.channelCount = 0;
-      throw new UnhandledAudioFormatException(inputAudioFormat);
+class OHLAudioProcessor(context: Context) : AudioProcessor {
+    private val context: Context
+    private var channelCount = 0
+    private var samplingFreq = 0
+    private var convoTask: ConvoTask? = null
+    @Throws(UnhandledAudioFormatException::class)
+    override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
+        val encoding = inputAudioFormat.encoding
+        val sampleRateHz = inputAudioFormat.sampleRate
+        val channelCount = inputAudioFormat.channelCount
+        if (encoding != C.ENCODING_PCM_16BIT) {
+            this.channelCount = 0
+            throw UnhandledAudioFormatException(inputAudioFormat)
+        }
+        if (!ImpulseResponse.SAMPLING_FREQ.isCapable(sampleRateHz) || channelCount > 2) {
+            this.channelCount = 0
+            throw UnhandledAudioFormatException(inputAudioFormat)
+        }
+        if (samplingFreq != sampleRateHz) {
+            try {
+                convoTask = StereoHRTFConvoTask.create(context, sampleRateHz)
+                samplingFreq = sampleRateHz
+            } catch (e: IOException) {
+                Log.e(TAG, "creating ConvoTask is failed...", e)
+                convoTask = null
+                throw IllegalStateException()
+            }
+        }
+        this.channelCount = channelCount
+        return AudioProcessor.AudioFormat(sampleRateHz, 2, C.ENCODING_PCM_16BIT)
     }
-    if (!ImpulseResponse.SAMPLING_FREQ.isCapable(sampleRateHz) || channelCount > 2) {
-      this.channelCount = 0;
-      throw new UnhandledAudioFormatException(inputAudioFormat);
+
+    override fun isActive(): Boolean {
+        return (channelCount != 0
+                && convoTask != null)
     }
 
-    if (this.samplingFreq != sampleRateHz) {
-      try {
-        convoTask = StereoHRTFConvoTask.create(context, sampleRateHz);
-        this.samplingFreq = sampleRateHz;
-      } catch (IOException e) {
-        Log.e(TAG, "creating ConvoTask is failed...", e);
-        convoTask = null;
-        return null;
-      }
-    }
-    this.channelCount = channelCount;
-    return new AudioFormat(sampleRateHz, 2, C.ENCODING_PCM_16BIT);
-  }
-
-  @Override
-  public boolean isActive() {
-    return channelCount != 0
-        && convoTask != null;
-  }
-
-  private ByteBuffer buf = EMPTY_BUFFER;
-  private ByteBuffer outBuf = EMPTY_BUFFER;
-  private AudioChannels tail = new AudioChannels();
-  private short[] inBuf = new short[0];
-
-  @Override
-  public void queueInput(ByteBuffer inputBuf) {
+    private var buf = AudioProcessor.EMPTY_BUFFER
+    private var outBuf = AudioProcessor.EMPTY_BUFFER
+    private var tail = AudioChannels()
+    private var inBuf = ShortArray(0)
+    override fun queueInput(inputBuf: ByteBuffer) {
 //    Log.d(TAG, "queueInput: ");
-    if (inputBuf.remaining() <= 0) {
-      return;
+        if (inputBuf.remaining() <= 0) {
+            return
+        }
+        if (buf.remaining() != inputBuf.remaining()) {
+            buf = ByteBuffer.allocate(inputBuf.remaining()).order(ByteOrder.nativeOrder())
+        } else {
+            buf.clear()
+        }
+        val shortBuffer = inputBuf.asShortBuffer()
+        setupBuffer(shortBuffer)
+        if (enabled) {
+            convo(inBuf)
+        } else {
+            thru(inBuf)
+        }
+        inputBuf.position(inputBuf.position() + inputBuf.remaining())
+        buf.flip()
+        outBuf = buf
     }
-    if (buf.remaining() != inputBuf.remaining()) {
-      buf = ByteBuffer.allocate(inputBuf.remaining()).order(ByteOrder.nativeOrder());
-    } else {
-      buf.clear();
+
+    private fun setupBuffer(shortBuffer: ShortBuffer) {
+        val remaining = shortBuffer.remaining()
+        var bufLength = remaining
+        if (channelCount == 1) {
+            bufLength *= 2
+        }
+        if (inBuf.size != bufLength) {
+            inBuf = ShortArray(bufLength)
+        }
+        if (channelCount == 1) {
+            for (i in 0 until remaining) {
+                val s = shortBuffer[i]
+                inBuf[2 * i] = s
+                inBuf[2 * i + 1] = s
+            }
+        } else {
+            shortBuffer[inBuf]
+        }
     }
-    final ShortBuffer shortBuffer = inputBuf.asShortBuffer();
-    setupBuffer(shortBuffer);
-    if (enabled) {
-      convo(inBuf);
-    } else {
-      thru(inBuf);
+
+    private var throughFactor = 0.6
+    private fun thru(inBuf: ShortArray) {
+        val size = min(buf.remaining() / 4, tail.size())
+        for (i in 0 until size) {
+            buf.putShort((tail.getL(i) + inBuf[i * 2] * throughFactor).toInt().toShort())
+            buf.putShort((tail.getR(i) + inBuf[i * 2 + 1] * throughFactor).toInt().toShort())
+        }
+        for (i in size * 2 until inBuf.size) {
+            buf.putShort((inBuf[i] * throughFactor).toInt().toShort())
+        }
+        tail = if (size < tail.size()) {
+            val newChannels = AudioChannels(tail.size() - size)
+            newChannels.copyFrom(tail, size, 0, newChannels.size())
+            newChannels
+        } else {
+            AudioChannels()
+        }
     }
-    inputBuf.position(inputBuf.position() + inputBuf.remaining());
-    buf.flip();
-    outBuf = buf;
-  }
 
-  private void setupBuffer(ShortBuffer shortBuffer) {
-    final int remaining = shortBuffer.remaining();
-    int bufLength = remaining;
-    if (channelCount == 1) {
-      bufLength *= 2;
+    private var effectedFactor = 1.0
+    private fun convo(inBuf: ShortArray) {
+        val windowSize = inBuf.size / 2
+        val audioChannels = convoTask!!.convo(inBuf)
+        audioChannels.productFactor(effectedFactor)
+        audioChannels.add(tail)
+        val ampFactor = audioChannels.checkClipping(LIMIT_VALUE)
+        effectedFactor *= ampFactor
+        throughFactor *= ampFactor
+        for (i in 0 until windowSize) {
+            buf.putShort(audioChannels.getL(i).toShort())
+            buf.putShort(audioChannels.getR(i).toShort())
+        }
+        if (tail.size() != audioChannels.size() - windowSize) {
+            tail = AudioChannels(audioChannels.size() - windowSize)
+        }
+        tail.copyFrom(audioChannels, windowSize, 0, tail.size())
     }
-    if (inBuf.length != bufLength) {
-      inBuf = new short[bufLength];
+
+    private var inputEnded = false
+    override fun queueEndOfStream() {
+        Log.d(TAG, "queueEndOfStream: ")
+        inputEnded = true
     }
-    if (channelCount == 1) {
-      for (int i = 0; i < remaining; i++) {
-        final short s = shortBuffer.get(i);
-        inBuf[2 * i] = s;
-        inBuf[2 * i + 1] = s;
-      }
-    } else {
-      shortBuffer.get(inBuf);
+
+    override fun getOutput(): ByteBuffer {
+        val buffer = outBuf
+        outBuf = AudioProcessor.EMPTY_BUFFER
+        return buffer
     }
-  }
 
-  private double throughFactor = 0.6;
-
-  private void thru(short[] inBuf) {
-    final int size = Math.min(buf.remaining() / 4, tail.size());
-    for (int i = 0; i < size; i++) {
-      buf.putShort((short) (tail.getL(i) + inBuf[i * 2] * throughFactor));
-      buf.putShort((short) (tail.getR(i) + inBuf[i * 2 + 1] * throughFactor));
+    override fun isEnded(): Boolean {
+        return inputEnded
     }
-    for (int i = size * 2; i < inBuf.length; i++) {
-      buf.putShort((short) (inBuf[i] * throughFactor));
+
+    override fun flush() {
+        inputEnded = false
     }
-    if (size < tail.size()) {
-      AudioChannels newChannels = new AudioChannels(tail.size() - size);
-      newChannels.copyFrom(tail, size, 0, newChannels.size());
-      tail = newChannels;
-    } else {
-      tail = new AudioChannels();
+
+    override fun reset() {
+        inputEnded = false
+        convoTask!!.release()
     }
-  }
 
-  private static final int LIMIT_VALUE = 30000; // ~92% of max PCM 16bit value
-  private double effectedFactor = 1;
+    private var enabled = false
 
-  private void convo(short[] inBuf) {
-    final int windowSize = inBuf.length / 2;
-    final AudioChannels audioChannels = convoTask.convo(inBuf);
-    audioChannels.productFactor(effectedFactor);
-    audioChannels.add(tail);
-    final double ampFactor = audioChannels.checkClipping(LIMIT_VALUE);
-    effectedFactor *= ampFactor;
-    throughFactor *= ampFactor;
-    for (int i = 0; i < windowSize; i++) {
-      buf.putShort((short) audioChannels.getL(i));
-      buf.putShort((short) audioChannels.getR(i));
+    init {
+        this.context = context.applicationContext
     }
-    if (tail.size() != audioChannels.size() - windowSize) {
-      tail = new AudioChannels(audioChannels.size() - windowSize);
+
+    fun setEnabled(enabled: Boolean) {
+        this.enabled = enabled
     }
-    tail.copyFrom(audioChannels, windowSize, 0, tail.size());
-  }
 
-  private boolean inputEnded = false;
-
-  @Override
-  public void queueEndOfStream() {
-    Log.d(TAG, "queueEndOfStream: ");
-    this.inputEnded = true;
-  }
-
-  @Override
-  public ByteBuffer getOutput() {
-    ByteBuffer buffer = outBuf;
-    outBuf = EMPTY_BUFFER;
-    return buffer;
-  }
-
-  @Override
-  public boolean isEnded() {
-    return inputEnded;
-  }
-
-  @Override
-  public void flush() {
-    this.inputEnded = false;
-  }
-
-  @Override
-  public void reset() {
-    inputEnded = false;
-    convoTask.release();
-  }
-
-  private boolean enabled = false;
-
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
-  }
+    companion object {
+        private val TAG = OHLAudioProcessor::class.java.simpleName
+        private const val LIMIT_VALUE = 30000 // ~92% of max PCM 16bit value
+    }
 }

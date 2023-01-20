@@ -4,8 +4,6 @@ plugins {
     id 'kotlin-kapt'
 }
 
-apply plugin: "realm-android"
-
 android {
     compileSdkVersion 33
     namespace "com.freshdigitable.ohlplayer"
@@ -20,8 +18,12 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
     buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -42,10 +44,11 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":model")
 
-    implementation 'io.realm:realm-gradle-plugin:10.11.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
 
     implementation "com.google.android.exoplayer:exoplayer-core:$versions.exo_player"
     implementation "com.google.android.exoplayer:exoplayer-ui:$versions.exo_player"
+    implementation "androidx.activity:activity-ktx:1.6.1"
     implementation "androidx.appcompat:appcompat:$versions.appcompat"
     implementation "androidx.recyclerview:recyclerview:$versions.recycler_view"
     implementation "androidx.constraintlayout:constraintlayout:$versions.constraint_layout"

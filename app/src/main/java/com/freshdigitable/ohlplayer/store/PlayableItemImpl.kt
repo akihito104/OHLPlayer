@@ -1,45 +1,21 @@
-package com.freshdigitable.ohlplayer.store;
+package com.freshdigitable.ohlplayer.store
 
-import android.net.Uri;
-import androidx.annotation.NonNull;
+import android.net.Uri
 
 /**
  * Created by akihit on 2017/06/06.
  */
+internal data class PlayableItemImpl(
+    override val path: String,
+    override val title: String?,
+    override val artist: String?,
+) : PlayableItem {
+    override val uri: Uri?
+        get() = Uri.parse(path)
 
-class PlayableItemImpl implements PlayableItem {
-  private final String path;
-  private final String title;
-  private final String artist;
-
-  @Override
-  public String getPath() {
-    return path;
-  }
-
-  @Override
-  public Uri getUri(){
-    return Uri.parse(path);
-  }
-
-  @Override
-  public String getTitle() {
-    return title;
-  }
-
-  @Override
-  public String getArtist() {
-    return artist;
-  }
-
-  @Override
-  public int compareTo(@NonNull PlayableItem o) {
-    return title.compareTo(o.getTitle());
-  }
-
-  PlayableItemImpl(Builder builder) {
-    this.path = builder.path;
-    this.title = builder.title;
-    this.artist = builder.artist;
-  }
+    constructor(builder: PlayableItem.Builder) : this(
+        path = builder.path,
+        title = builder.title,
+        artist = builder.artist,
+    )
 }
