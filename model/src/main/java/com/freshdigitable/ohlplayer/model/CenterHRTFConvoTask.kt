@@ -1,69 +1,73 @@
-package com.freshdigitable.ohlplayer.model;
+package com.freshdigitable.ohlplayer.model
 
-import android.content.Context;
-
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.CHANNEL;
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.DIRECTION;
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.SAMPLING_FREQ;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import android.content.Context
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.*
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 /**
  * Created by akihit on 2017/05/14.
  */
-
-public class CenterHRTFConvoTask implements ConvoTask {
-  private short[] inBuf = new short[0];
-  private ComplexArray inputFft = new ComplexArray(0);
-  private final ImpulseResponse hrirL;
-  private final ImpulseResponse hrirR;
-  private final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-  public static CenterHRTFConvoTask create(Context context) throws IOException {
-    final ImpulseResponse hrirL = ImpulseResponse.load(context, DIRECTION.C, CHANNEL.L, SAMPLING_FREQ.HZ_44100);
-    final ImpulseResponse hrirR = ImpulseResponse.load(context, DIRECTION.C, CHANNEL.R, SAMPLING_FREQ.HZ_44100);
-    return new CenterHRTFConvoTask(hrirL, hrirR);
-  }
-
-  private CenterHRTFConvoTask(ImpulseResponse hrirL, ImpulseResponse hrirR) {
-    this.hrirL = hrirL;
-    this.hrirR = hrirR;
-  }
-
-  @Override
-  public AudioChannels convo(short[] input) {
-    final int inputSize = input.length / 2;
-    if (inBuf.length != inputSize) {
-      inBuf = new short[inputSize];
+class CenterHRTFConvoTask private constructor(
+    private val hrirL: ImpulseResponse,
+    private val hrirR: ImpulseResponse,
+) : ConvoTask {
+    private var inBuf = ShortArray(0)
+    private var inputFft = ComplexArray(0)
+    private val executor = Executors.newFixedThreadPool(2)
+    override fun convo(input: ShortArray): AudioChannels {
+        val inputSize = input.size / 2
+        if (inBuf.size != inputSize) {
+            inBuf = ShortArray(inputSize)
+        }
+        for (i in 0 until inputSize) { // to monaural
+            inBuf[i] = ((input[i * 2] + input[i * 2 + 1]) / 2).toShort()
+        }
+        val outSize = inBuf.size + hrirL.size - 1
+        val fftSize: Int = ComplexArray.calcFFTSize(outSize)
+        if (inputFft.size() != fftSize) {
+            inputFft = ComplexArray(fftSize)
+        }
+        inputFft.fft(inBuf)
+        val futures: List<Future<IntArray>>
+        return try {
+            futures = executor.invokeAll(
+                listOf(
+                    hrirL.callableConvo(inputFft, outSize),
+                    hrirR.callableConvo(inputFft, outSize)
+                )
+            )
+            AudioChannels(futures[0].get(), futures[1].get())
+        } catch (e: InterruptedException) {
+            AudioChannels(0)
+        } catch (e: ExecutionException) {
+            AudioChannels(0)
+        }
     }
-    for (int i = 0; i < inputSize; i++) { // to monaural
-      inBuf[i] = (short) ((input[i * 2] + input[i * 2 + 1]) / 2);
-    }
-    final int outSize = inBuf.length + hrirL.getSize() - 1;
-    final int fftSize = ComplexArray.calcFFTSize(outSize);
-    if (inputFft.size() != fftSize) {
-      inputFft = new ComplexArray(fftSize);
-    }
-    inputFft.fft(inBuf);
-    final List<Future<int[]>> futures;
-    try {
-      futures = executor.invokeAll(Arrays.asList(
-          hrirL.callableConvo(inputFft, outSize),
-          hrirR.callableConvo(inputFft, outSize)));
-      return new AudioChannels(futures.get(0).get(), futures.get(1).get());
-    } catch (InterruptedException | ExecutionException e) {
-      return new AudioChannels(0);
-    }
-  }
 
-  @Override
-  public void release() {
-    executor.shutdown();
-  }
+    override fun release() {
+        executor.shutdown()
+    }
+
+    companion object {
+        @Throws(IOException::class)
+        fun create(context: Context): CenterHRTFConvoTask {
+            val hrirL: ImpulseResponse = ImpulseResponse.load(
+                context,
+                DIRECTION.C,
+                CHANNEL.L,
+                SamplingFreq.HZ_44100
+            )
+            val hrirR: ImpulseResponse = ImpulseResponse.load(
+                context,
+                DIRECTION.C,
+                CHANNEL.R,
+                SamplingFreq.HZ_44100
+            )
+            return CenterHRTFConvoTask(hrirL, hrirR)
+        }
+    }
 }

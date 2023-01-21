@@ -32,7 +32,7 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
             this.channelCount = 0
             throw UnhandledAudioFormatException(inputAudioFormat)
         }
-        if (!ImpulseResponse.SAMPLING_FREQ.isCapable(sampleRateHz) || channelCount > 2) {
+        if (!ImpulseResponse.SamplingFreq.isCapable(sampleRateHz) || channelCount > 2) {
             this.channelCount = 0
             throw UnhandledAudioFormatException(inputAudioFormat)
         }
@@ -122,8 +122,10 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
 
     private var effectedFactor = 1.0
     private fun convo(inBuf: ShortArray) {
+        val convoTask = this.convoTask ?: throw IllegalStateException()
+
         val windowSize = inBuf.size / 2
-        val audioChannels = convoTask!!.convo(inBuf)
+        val audioChannels = convoTask.convo(inBuf)
         audioChannels.productFactor(effectedFactor)
         audioChannels.add(tail)
         val ampFactor = audioChannels.checkClipping(LIMIT_VALUE)

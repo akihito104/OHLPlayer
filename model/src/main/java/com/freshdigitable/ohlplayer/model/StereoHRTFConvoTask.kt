@@ -1,123 +1,134 @@
-package com.freshdigitable.ohlplayer.model;
+package com.freshdigitable.ohlplayer.model
 
-import android.content.Context;
-import androidx.annotation.NonNull;
-
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.CHANNEL;
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.DIRECTION;
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.SAMPLING_FREQ;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import android.content.Context
+import com.freshdigitable.ohlplayer.model.ImpulseResponse.*
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import kotlin.math.sqrt
 
 /**
  * Created by akihit on 2017/05/15.
  */
-
-public class StereoHRTFConvoTask implements ConvoTask {
-//  private static final String TAG = StereoHRTFConvoTask.class.getSimpleName();
-  private final ExecutorService executor = Executors.newFixedThreadPool(4);
-  private final ImpulseResponse hrirL30L, hrirL30R;
-  private final ImpulseResponse hrirR30L, hrirR30R;
-  private short[] chL = new short[0];
-  private short[] chR = new short[0];
-  private ComplexArray fftChL = new ComplexArray(0);
-  private ComplexArray fftChR = new ComplexArray(0);
-
-  @Override
-  public AudioChannels convo(short[] input) {
-    int size = input.length / 2;
-    if (size != chL.length) {
-      chL = new short[size];
-      chR = new short[size];
+class StereoHRTFConvoTask private constructor(
+    private val hrirL30L: ImpulseResponse, private val hrirL30R: ImpulseResponse,
+    private val hrirR30L: ImpulseResponse, private val hrirR30R: ImpulseResponse
+) : ConvoTask {
+    private val executor = Executors.newFixedThreadPool(4)
+    private var chL = ShortArray(0)
+    private var chR = ShortArray(0)
+    private var fftChL = ComplexArray(0)
+    private var fftChR = ComplexArray(0)
+    override fun convo(input: ShortArray): AudioChannels {
+        val size = input.size / 2
+        if (size != chL.size) {
+            chL = ShortArray(size)
+            chR = ShortArray(size)
+        }
+        for (i in 0 until size) {
+            chL[i] = input[i * 2]
+            chR[i] = input[i * 2 + 1]
+        }
+        val outSize = size + hrirL30L.size - 1
+        val fftSize: Int = ComplexArray.calcFFTSize(outSize)
+        if (fftChL.size() != fftSize) {
+            fftChL = ComplexArray(fftSize)
+            fftChR = ComplexArray(fftSize)
+        }
+        return try {
+            val fftFuture = executor.invokeAll(
+                listOf(
+                    callableFFT(fftChL, chL),
+                    callableFFT(fftChR, chR)
+                )
+            )
+            fftChL = fftFuture[0].get()
+            fftChR = fftFuture[1].get()
+            val convoFuture = executor.invokeAll(
+                listOf(
+                    hrirL30L.callableConvo(fftChL, fftSize),
+                    hrirL30R.callableConvo(fftChL, fftSize),
+                    hrirR30L.callableConvo(fftChR, fftSize),
+                    hrirR30R.callableConvo(fftChR, fftSize)
+                )
+            )
+            val outL = add(convoFuture[0], convoFuture[2])
+            val outR = add(convoFuture[1], convoFuture[3])
+            AudioChannels(outL, outR)
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+            AudioChannels()
+        } catch (e: ExecutionException) {
+            e.printStackTrace()
+            AudioChannels()
+        }
     }
-    for (int i = 0; i < size; i++) {
-      chL[i] = input[i * 2];
-      chR[i] = input[i * 2 + 1];
+
+    @Throws(ExecutionException::class, InterruptedException::class)
+    private fun add(a: Future<IntArray?>, b: Future<IntArray?>): IntArray {
+        val aa = a.get()
+        val bb = b.get()
+        val res = IntArray(aa!!.size)
+        for (i in res.indices) {
+            res[i] = (aa[i] + bb!![i]) / 2
+        }
+        return res
     }
-    final int outSize = size + hrirL30L.getSize() - 1;
-    final int fftSize = ComplexArray.calcFFTSize(outSize);
-    if (fftChL.size() != fftSize) {
-      fftChL = new ComplexArray(fftSize);
-      fftChR = new ComplexArray(fftSize);
+
+    private fun callableFFT(fft: ComplexArray, input: ShortArray): Callable<ComplexArray> {
+        return Callable {
+            fft.fft(input)
+            fft
+        }
     }
-    try {
-      final List<Future<ComplexArray>> fftFuture = executor.invokeAll(Arrays.asList(
-          callableFFT(fftChL, chL),
-          callableFFT(fftChR, chR)));
-      fftChL = fftFuture.get(0).get();
-      fftChR = fftFuture.get(1).get();
-      final List<Future<int[]>> convoFuture = executor.invokeAll(Arrays.asList(
-          hrirL30L.callableConvo(fftChL, fftSize),
-          hrirL30R.callableConvo(fftChL, fftSize),
-          hrirR30L.callableConvo(fftChR, fftSize),
-          hrirR30R.callableConvo(fftChR, fftSize)));
-      int[] outL = add(convoFuture.get(0), convoFuture.get(2));
-      int[] outR = add(convoFuture.get(1), convoFuture.get(3));
-      return new AudioChannels(outL, outR);
-    } catch (InterruptedException | ExecutionException e) {
-      e.printStackTrace();
-      return new AudioChannels();
+
+    override fun release() {
+        executor.shutdown()
     }
-  }
 
-  private int[] add(Future<int[]> a, Future<int[]> b) throws ExecutionException, InterruptedException {
-    int[] aa = a.get();
-    int[] bb = b.get();
-    int[] res = new int[aa.length];
-    for (int i = 0; i < res.length; i++) {
-      res[i] = (aa[i] + bb[i]) / 2;
+    init {
+        val startL = hrirL30L.findFirstEdge()
+        val startR = hrirR30R.findFirstEdge()
+        val powL = hrirL30L.power(
+            startL,
+            RESPONSE_LENGTH
+        ) // + this.hrirR30L.power(startR, RESPONSE_LENGTH);
+        val powR = hrirR30R.power(
+            startR,
+            RESPONSE_LENGTH
+        ) // + this.hrirL30R.power(startL, RESPONSE_LENGTH);
+        hrirL30L.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP)
+        hrirL30R.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP)
+        hrirR30L.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * sqrt(powL / powR))
+        hrirR30R.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * sqrt(powL / powR))
     }
-    return res;
-  }
 
-  private Callable<ComplexArray> callableFFT(final ComplexArray fft, final short[] input) {
-    return () -> {
-      fft.fft(input);
-      return fft;
-    };
-  }
+    companion object {
+        @Throws(IOException::class)
+        fun create(context: Context, samplingFreq: Int): StereoHRTFConvoTask {
+            return create(context, SamplingFreq.Companion.valueOf(samplingFreq))
+        }
 
-  @Override
-  public void release() {
-    executor.shutdown();
-  }
+        @Throws(IOException::class)
+        private fun create(
+            context: Context,
+            freq: SamplingFreq
+        ): StereoHRTFConvoTask {
+            val hrirL30L: ImpulseResponse =
+                ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.L, freq)
+            val hrirL30R: ImpulseResponse =
+                ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.R, freq)
+            val hrirR30L: ImpulseResponse =
+                ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.L, freq)
+            val hrirR30R: ImpulseResponse =
+                ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.R, freq)
+            return StereoHRTFConvoTask(hrirL30L, hrirL30R, hrirR30L, hrirR30R)
+        }
 
-  public static StereoHRTFConvoTask create(@NonNull Context context, int samplingFreq) throws IOException {
-    return create(context, SAMPLING_FREQ.valueOf(samplingFreq));
-  }
-
-  private static StereoHRTFConvoTask create(@NonNull Context context,
-                                    @NonNull SAMPLING_FREQ freq) throws IOException {
-    final ImpulseResponse hrirL30L = ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.L, freq);
-    final ImpulseResponse hrirL30R = ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.R, freq);
-    final ImpulseResponse hrirR30L = ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.L, freq);
-    final ImpulseResponse hrirR30R = ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.R, freq);
-    return new StereoHRTFConvoTask(hrirL30L, hrirL30R, hrirR30L, hrirR30R);
-  }
-
-  private static final int RESPONSE_LENGTH = 1800;
-  private static final double RESPONSE_AMP = 3;
-  private StereoHRTFConvoTask(ImpulseResponse hrirL30L, ImpulseResponse hrirL30R,
-                              ImpulseResponse hrirR30L, ImpulseResponse hrirR30R) {
-    this.hrirL30L = hrirL30L;
-    this.hrirL30R = hrirL30R;
-    this.hrirR30L = hrirR30L;
-    this.hrirR30R = hrirR30R;
-
-    int startL = this.hrirL30L.findFirstEdge();
-    int startR = this.hrirR30R.findFirstEdge();
-    double powL = this.hrirL30L.power(startL, RESPONSE_LENGTH);// + this.hrirR30L.power(startR, RESPONSE_LENGTH);
-    double powR = this.hrirR30R.power(startR, RESPONSE_LENGTH);// + this.hrirL30R.power(startL, RESPONSE_LENGTH);
-    this.hrirL30L.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP);
-    this.hrirL30R.reform(startL, RESPONSE_LENGTH, RESPONSE_AMP);
-    this.hrirR30L.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * Math.sqrt(powL / powR));
-    this.hrirR30R.reform(startR, RESPONSE_LENGTH, RESPONSE_AMP * Math.sqrt(powL / powR));
-  }
+        private const val RESPONSE_LENGTH = 1800
+        private const val RESPONSE_AMP = 3.0
+    }
 }

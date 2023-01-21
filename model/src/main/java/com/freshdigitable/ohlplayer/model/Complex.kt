@@ -1,73 +1,58 @@
-package com.freshdigitable.ohlplayer.model;
+package com.freshdigitable.ohlplayer.model
 
-import androidx.annotation.NonNull;
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * Created by akihit on 2017/05/07.
  */
-public class Complex {
-  private double re;
-  private double im;
+class Complex @JvmOverloads internal constructor(
+    var real: Double = 0.0,
+    var imag: Double = 0.0,
+) {
+    fun prod(other: Complex): Complex {
+        val re = real * other.real - imag * other.imag
+        val im = imag * other.real + real * other.imag
+        return Complex(re, im)
+    }
 
-  Complex() {
-    this(0, 0);
-  }
+    fun productedBy(other: Complex): Complex {
+        val re = real * other.real - imag * other.imag
+        val im = imag * other.real + real * other.imag
+        real = re
+        imag = im
+        return this
+    }
 
-  Complex(double re, double im) {
-    this.re = re;
-    this.im = im;
-  }
+    fun add(adder: Complex) {
+        real += adder.real
+        imag += adder.imag
+    }
 
-  Complex prod(Complex other) {
-    final double re = this.re * other.re - this.im * other.im;
-    final double im = this.im * other.re + this.re * other.im;
-    return new Complex(re, im);
-  }
+    fun divideScalar(d: Double) {
+        real /= d
+        imag /= d
+    }
 
-  Complex productedBy(Complex other) {
-    final double re = this.re * other.re - this.im * other.im;
-    final double im = this.im * other.re + this.re * other.im;
-    this.re = re;
-    this.im = im;
-    return this;
-  }
+    fun conjugate() {
+        imag = -imag
+    }
 
-  void add(Complex adder) {
-    this.re += adder.re;
-    this.im += adder.im;
-  }
+    override fun toString(): String {
+        return "$real + $imag i"
+    }
 
-  void divideScalar(double d) {
-    this.re /= d;
-    this.im /= d;
-  }
+    fun clear() {
+        real = 0.0
+        imag = 0.0
+    }
 
-  void conjugate() {
-    im = -im;
-  }
-
-  @NonNull
-  @Override
-  public String toString() {
-    return re + " + " + im + " i";
-  }
-
-  public static Complex exp(double radix) {
-    final double re = Math.cos(radix);
-    final double im = Math.sin(radix);
-    return new Complex(re, im);
-  }
-
-  public double getReal() {
-    return re;
-  }
-
-  public double getImag() {
-    return im;
-  }
-
-  public void clear() {
-    re = 0;
-    im = 0;
-  }
+    companion object {
+        @JvmStatic
+        fun exp(radix: Double): Complex {
+            val re = cos(radix)
+            val im = sin(radix)
+            return Complex(re, im)
+        }
+    }
 }

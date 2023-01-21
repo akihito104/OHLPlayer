@@ -1,11 +1,9 @@
-package com.freshdigitable.ohlplayer.model;
+package com.freshdigitable.ohlplayer.model
 
 /**
  * Created by akihit on 2017/05/14.
  */
-
-public interface ConvoTask {
-  AudioChannels convo(short[] input);
-
-  void release();
+interface ConvoTask {
+    fun convo(input: ShortArray): AudioChannels
+    fun release()
 }
