@@ -32,7 +32,9 @@ class MediaPlayerActivity : AppCompatActivity() {
     private var simpleExoPlayer: ExoPlayer? = null
     private var controller: PlayerControlView? = null
     private var ohlToggle: SwitchCompat? = null
-    private val playableItemStore = PlayableItemStore()
+    private val playableItemStore: PlayableItemStore
+        get() = (application as MainApplication).playableItemStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_media_player)
@@ -74,12 +76,7 @@ class MediaPlayerActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         playableItemStore.open()
-        val item = playableItemStore.findByPath(path)
-        val supportActionBar = supportActionBar
-        if (item != null && supportActionBar != null) {
-            supportActionBar.title = item.title
-            supportActionBar.subtitle = item.artist
-        }
+        setupTitle()
 
         val controller = this.controller ?: return
         window.decorView.setOnSystemUiVisibilityChangeListener { visibility: Int ->
@@ -100,6 +97,14 @@ class MediaPlayerActivity : AppCompatActivity() {
                 controller.show()
             }
         }
+    }
+
+    private fun setupTitle() {
+        val supportActionBar = supportActionBar ?: return
+        val path = this.path ?: return
+        val item = playableItemStore.findByPath(path) ?: return
+        supportActionBar.title = item.title
+        supportActionBar.subtitle = item.artist
     }
 
     override fun onStop() {

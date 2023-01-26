@@ -37,7 +37,7 @@ class PlayableItemStore {
     fun close() {
     }
 
-    fun findByPath(path: String?): PlayableItem? {
+    fun findByPath(path: String): PlayableItem? {
         return mediaItems.value.firstOrNull { it.path == path }
     }
 }
