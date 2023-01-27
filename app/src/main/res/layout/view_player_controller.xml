@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+    <TextView
+        android:id="@+id/player_sw_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="@id/controller"
+        app:layout_constraintBottom_toTopOf="@id/ohl_toggle"
+        app:layout_constraintStart_toEndOf="@id/controller"
+        app:layout_constraintLeft_toRightOf="@id/controller"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:background="#8ddd"
+        android:text="OHL"
+        />
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/ohl_toggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/player_sw_label"
+        app:layout_constraintBottom_toBottomOf="@id/controller"
+        app:layout_constraintStart_toEndOf="@id/controller"
+        app:layout_constraintLeft_toRightOf="@id/controller"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginBottom="8dp"
+        android:rotation="270"
+        />
+    <com.google.android.exoplayer2.ui.PlayerControlView
+        android:id="@+id/controller"
+        app:controller_layout_id="@layout/exo_player_control_view"
+        android:layout_width="0dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/player_sw_label"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:show_timeout="-1"
+        android:visibility="visible"
+        />
+</androidx.constraintlayout.widget.ConstraintLayout>

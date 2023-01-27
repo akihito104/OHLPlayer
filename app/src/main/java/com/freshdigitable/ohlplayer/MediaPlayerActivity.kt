@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
-import android.widget.CompoundButton
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -33,22 +32,26 @@ class MediaPlayerActivity : AppCompatActivity() {
     private var simpleExoPlayer: ExoPlayer? = null
     private var controller: PlayerControlView? = null
     private var ohlToggle: SwitchCompat? = null
-    private var overlayView: View? = null
-    private val playableItemStore = PlayableItemStore()
+    private val playableItemStore: PlayableItemStore
+        get() = (application as MainApplication).playableItemStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_media_player)
-        controller = findViewById(R.id.player_controller)
-        ohlToggle = findViewById(R.id.ohl_toggle)
-        overlayView = findViewById(R.id.player_overlay)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setSupportActionBar(findViewById(R.id.player_toolbar))
         showSystemUI()
-        val ohlAudioProcessor = createProcessor(applicationContext)
-        simpleExoPlayer = createPlayer(applicationContext, ohlAudioProcessor)
+
+        val audioProcessor = createProcessor(applicationContext)
+        ohlToggle = findViewById<SwitchCompat?>(R.id.ohl_toggle)?.also {
+            it.setOnCheckedChangeListener { _, isChecked -> audioProcessor.setEnabled(isChecked) }
+        }
+
+        val simpleExoPlayer = createPlayer(applicationContext, audioProcessor)
+        this.simpleExoPlayer = simpleExoPlayer
         val surfaceContainer =
             findViewById<AspectRatioFrameLayout>(R.id.player_surface_view_container)
-        simpleExoPlayer!!.addListener(object : Player.Listener {
+        simpleExoPlayer.addListener(object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 val width = videoSize.width
                 val height = videoSize.height
@@ -60,61 +63,65 @@ class MediaPlayerActivity : AppCompatActivity() {
 
             override fun onRenderedFirstFrame() {}
         })
-        simpleExoPlayer!!.setVideoSurfaceView(findViewById<View>(R.id.player_surface_view) as SurfaceView)
-        controller?.player = simpleExoPlayer
-        controller?.show()
-        ohlToggle?.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-            ohlAudioProcessor.setEnabled(isChecked)
+        simpleExoPlayer.setVideoSurfaceView(findViewById<View>(R.id.player_surface_view) as SurfaceView)
+        controller = findViewById<PlayerControlView?>(R.id.player_controller)?.also {
+            it.player = simpleExoPlayer
+            it.show()
         }
-        val extractorMediaSource = createExtractorMediaSource(
-            applicationContext, uri!!
-        )
-        simpleExoPlayer!!.setMediaSource(extractorMediaSource)
-        simpleExoPlayer!!.prepare()
+        val extractorMediaSource = createExtractorMediaSource(applicationContext, uri!!)
+        simpleExoPlayer.setMediaSource(extractorMediaSource)
+        simpleExoPlayer.prepare()
     }
 
     override fun onStart() {
         super.onStart()
         playableItemStore.open()
-        val item = playableItemStore.findByPath(path)
-        val supportActionBar = supportActionBar
-        if (item != null && supportActionBar != null) {
-            supportActionBar.title = item.title
-            supportActionBar.subtitle = item.artist
-        }
+        setupTitle()
+
+        val controller = this.controller ?: return
         window.decorView.setOnSystemUiVisibilityChangeListener { visibility: Int ->
             if (isSystemUIVisible(visibility)) {
                 showOverlayUI(supportActionBar)
-                controller!!.show()
+                controller.show()
             } else {
                 hideOverlayUI(supportActionBar)
-                controller!!.hide()
+                controller.hide()
             }
         }
-        overlayView!!.setOnClickListener { v: View? ->
+        (controller.parent as? View)?.setOnClickListener { _: View? ->
             if (isSystemUIVisible) {
                 hideSystemUI()
-                controller!!.hide()
+                controller.hide()
             } else {
                 showSystemUI()
-                controller!!.show()
+                controller.show()
             }
         }
+    }
+
+    private fun setupTitle() {
+        val supportActionBar = supportActionBar ?: return
+        val path = this.path ?: return
+        val item = playableItemStore.findByPath(path) ?: return
+        supportActionBar.title = item.title
+        supportActionBar.subtitle = item.artist
     }
 
     override fun onStop() {
         super.onStop()
         playableItemStore.close()
         window.decorView.setOnSystemUiVisibilityChangeListener(null)
-        overlayView!!.setOnClickListener(null)
+        (controller?.parent as? View)?.setOnClickListener(null)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        simpleExoPlayer!!.stop()
-        simpleExoPlayer!!.release()
-        controller!!.player = null
-        ohlToggle!!.setOnCheckedChangeListener(null)
+        simpleExoPlayer?.apply {
+            stop()
+            release()
+        }
+        controller?.player = null
+        ohlToggle?.setOnCheckedChangeListener(null)
     }
 
     private val uri: Uri?
@@ -166,7 +173,7 @@ class MediaPlayerActivity : AppCompatActivity() {
     companion object {
         private val TAG = MediaPlayerActivity::class.java.simpleName
         private const val EXTRA_PATH = "path"
-        fun createIntent(context: Context, item: PlayableItem): Intent {
+        private fun createIntent(context: Context, item: PlayableItem): Intent {
             val intent = Intent(context, MediaPlayerActivity::class.java)
             intent.data = item.uri
             intent.putExtra(EXTRA_PATH, item.path)
@@ -193,7 +200,7 @@ class MediaPlayerActivity : AppCompatActivity() {
                         enableFloatOutput: Boolean,
                         enableAudioTrackPlaybackParams: Boolean,
                         enableOffload: Boolean
-                    ): AudioSink? {
+                    ): AudioSink {
                         return DefaultAudioSink.Builder()
                             .setAudioProcessorChain(DefaultAudioProcessorChain(ohlAudioProcessor))
                             .build()
