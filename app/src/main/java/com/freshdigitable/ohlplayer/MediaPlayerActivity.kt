@@ -5,12 +5,13 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.SurfaceView
+import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.freshdigitable.ohlplayer.databinding.ActivityMediaPlayerBinding
 import com.freshdigitable.ohlplayer.store.PlayableItem
 import com.freshdigitable.ohlplayer.store.PlayableItemStore
 import com.google.android.exoplayer2.DefaultRenderersFactory
@@ -22,24 +23,24 @@ import com.google.android.exoplayer2.audio.DefaultAudioSink
 import com.google.android.exoplayer2.audio.DefaultAudioSink.DefaultAudioProcessorChain
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
-import com.google.android.exoplayer2.ui.PlayerControlView
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.video.VideoSize
 
 class MediaPlayerActivity : AppCompatActivity() {
     private var simpleExoPlayer: ExoPlayer? = null
-    private var controller: PlayerControlView? = null
     private var ohlToggle: SwitchCompat? = null
+    private var binding: ActivityMediaPlayerBinding? = null
     private val playableItemStore: PlayableItemStore
         get() = (application as MainApplication).playableItemStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_media_player)
+        val binding = ActivityMediaPlayerBinding.inflate(LayoutInflater.from(this))
+        this.binding = binding
+        setContentView(binding.root)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setSupportActionBar(findViewById(R.id.player_toolbar))
+        setSupportActionBar(binding.playerToolbar)
         showSystemUI()
 
         val audioProcessor = createProcessor(applicationContext)
@@ -49,8 +50,7 @@ class MediaPlayerActivity : AppCompatActivity() {
 
         val simpleExoPlayer = createPlayer(applicationContext, audioProcessor)
         this.simpleExoPlayer = simpleExoPlayer
-        val surfaceContainer =
-            findViewById<AspectRatioFrameLayout>(R.id.player_surface_view_container)
+        val surfaceContainer = binding.playerSurfaceViewContainer
         simpleExoPlayer.addListener(object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 val width = videoSize.width
@@ -63,10 +63,10 @@ class MediaPlayerActivity : AppCompatActivity() {
 
             override fun onRenderedFirstFrame() {}
         })
-        simpleExoPlayer.setVideoSurfaceView(findViewById<View>(R.id.player_surface_view) as SurfaceView)
-        controller = findViewById<PlayerControlView?>(R.id.player_controller)?.also {
-            it.player = simpleExoPlayer
-            it.show()
+        simpleExoPlayer.setVideoSurfaceView(binding.playerSurfaceView)
+        binding.playerController.apply {
+            player = simpleExoPlayer
+            show()
         }
         val extractorMediaSource = createExtractorMediaSource(applicationContext, uri!!)
         simpleExoPlayer.setMediaSource(extractorMediaSource)
@@ -78,7 +78,7 @@ class MediaPlayerActivity : AppCompatActivity() {
         playableItemStore.open()
         setupTitle()
 
-        val controller = this.controller ?: return
+        val controller = binding?.playerController ?: return
         window.decorView.setOnSystemUiVisibilityChangeListener { visibility: Int ->
             if (isSystemUIVisible(visibility)) {
                 showOverlayUI(supportActionBar)
@@ -111,7 +111,7 @@ class MediaPlayerActivity : AppCompatActivity() {
         super.onStop()
         playableItemStore.close()
         window.decorView.setOnSystemUiVisibilityChangeListener(null)
-        (controller?.parent as? View)?.setOnClickListener(null)
+        (binding?.playerController?.parent as? View)?.setOnClickListener(null)
     }
 
     override fun onDestroy() {
@@ -120,8 +120,9 @@ class MediaPlayerActivity : AppCompatActivity() {
             stop()
             release()
         }
-        controller?.player = null
+        binding?.playerController?.player = null
         ohlToggle?.setOnCheckedChangeListener(null)
+        binding = null
     }
 
     private val uri: Uri?
