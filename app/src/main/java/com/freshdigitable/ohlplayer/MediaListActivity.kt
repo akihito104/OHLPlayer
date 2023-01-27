@@ -21,25 +21,26 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.freshdigitable.ohlplayer.databinding.ActivityMediaListBinding
+import com.freshdigitable.ohlplayer.databinding.ViewMediaListItemBinding
 import com.freshdigitable.ohlplayer.store.PlayableItem
 import com.freshdigitable.ohlplayer.store.PlayableItemStore
 import kotlinx.coroutines.flow.collectLatest
 import java.io.File
 
 class MediaListActivity : AppCompatActivity() {
-    private var listView: RecyclerView? = null
+    private var binding: ActivityMediaListBinding? = null
     private val playableItemStore: PlayableItemStore
         get() = (application as MainApplication).playableItemStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_media_list)
-        listView = findViewById(R.id.list)
-        val linearLayoutManager = LinearLayoutManager(
-            applicationContext
-        )
+        val binding = ActivityMediaListBinding.inflate(LayoutInflater.from(this))
+        this.binding = binding
+        setContentView(binding.root)
+        val linearLayoutManager = LinearLayoutManager(applicationContext)
         linearLayoutManager.isAutoMeasureEnabled = true
-        listView?.layoutManager = linearLayoutManager
+        binding.list.layoutManager = linearLayoutManager
     }
 
     override fun onStart() {
@@ -47,7 +48,7 @@ class MediaListActivity : AppCompatActivity() {
         playableItemStore.open()
         val adapter = ViewAdapter(playableItemStore)
         addLocalMediaFiles()
-        listView!!.adapter = adapter
+        binding?.list?.adapter = adapter
         lifecycleScope.launchWhenCreated {
             playableItemStore.getMediaItems().collectLatest {
                 adapter.submitList(it)
@@ -161,7 +162,7 @@ class MediaListActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        listView!!.adapter = null
+        binding?.list?.adapter = null
         playableItemStore.close()
     }
 }
@@ -171,8 +172,9 @@ private class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     val artist: TextView
 
     init {
-        title = itemView.findViewById(R.id.list_title)
-        artist = itemView.findViewById(R.id.list_artist)
+        val binding = ViewMediaListItemBinding.bind(itemView)
+        title = binding.listTitle
+        artist = binding.listArtist
     }
 }
 
