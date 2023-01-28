@@ -8,11 +8,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.text.TextUtils
 import android.util.Log
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +28,7 @@ import com.freshdigitable.ohlplayer.store.PlayableItem
 import com.freshdigitable.ohlplayer.store.PlayableItemStore
 import kotlinx.coroutines.flow.collectLatest
 import java.io.File
+import java.io.IOException
 
 class MediaListActivity : AppCompatActivity() {
     private var binding: ActivityMediaListBinding? = null
@@ -89,7 +91,7 @@ class MediaListActivity : AppCompatActivity() {
                     metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                 val path = uri.toString()
                 PlayableItem.Builder(path)
-                    .title(if (TextUtils.isEmpty(title)) File(path).name else title)
+                    .title(if (title.isNullOrEmpty()) File(path).name else title)
                     .artist(artist)
                     .build()
             }
@@ -165,16 +167,22 @@ class MediaListActivity : AppCompatActivity() {
         binding?.list?.adapter = null
         playableItemStore.close()
     }
+
+    companion object {
+        private val TAG = MediaListActivity::class.simpleName
+    }
 }
 
 private class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     val title: TextView
     val artist: TextView
+    val icon: ImageView
 
     init {
         val binding = ViewMediaListItemBinding.bind(itemView)
         title = binding.listTitle
         artist = binding.listArtist
+        icon = binding.listIcon
     }
 }
 
@@ -192,6 +200,7 @@ private class ViewAdapter(
         val item = playableItemStore[position]
         holder.title.text = item.title
         holder.artist.text = item.artist
+        holder.icon.setArtwork(item)
         holder.itemView.setOnClickListener { v: View ->
             MediaPlayerActivity.start(v.context, item)
         }
@@ -202,8 +211,25 @@ private class ViewAdapter(
         holder.itemView.setOnClickListener(null)
     }
 
-    override fun getItemCount(): Int {
-        return playableItemStore.itemCount
+    override fun getItemCount(): Int = playableItemStore.itemCount
+
+    companion object {
+        private fun ImageView.setArtwork(item: PlayableItem) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    val thumb = context.contentResolver.loadThumbnail(
+                        item.uri,
+                        Size(200, 200),
+                        null
+                    )
+                    setImageBitmap(thumb)
+                } catch (e: IOException) {
+                    setImageResource(R.drawable.ic_audiotrack_black)
+                }
+            } else {
+                setImageResource(R.drawable.ic_audiotrack_black)
+            }
+        }
     }
 }
 

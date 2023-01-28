@@ -10,7 +10,7 @@ internal data class PlayableItemImpl(
     override val title: String?,
     override val artist: String?,
 ) : PlayableItem {
-    override val uri: Uri?
+    override val uri: Uri
         get() = Uri.parse(path)
 
     constructor(builder: PlayableItem.Builder) : this(
