@@ -76,7 +76,6 @@ class MediaPlayerActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        playableItemStore.open()
         setupTitle()
 
         val controller = binding?.playerController ?: return
@@ -110,7 +109,6 @@ class MediaPlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        playableItemStore.close()
         window.decorView.setOnSystemUiVisibilityChangeListener(null)
         (binding?.playerController?.parent as? View)?.setOnClickListener(null)
     }
