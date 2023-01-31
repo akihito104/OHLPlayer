@@ -1,21 +1,21 @@
 package com.freshdigitable.ohlplayer.store
 
 import android.net.Uri
+import com.freshdigitable.ohlplayer.model.PlayableItem
 
 /**
  * Created by akihit on 2017/06/06.
  */
-internal data class PlayableItemImpl(
+private data class PlayableItemImpl(
     override val path: String,
     override val title: String?,
     override val artist: String?,
-) : PlayableItem {
-    override val uri: Uri
-        get() = Uri.parse(path)
+) : PlayableItem
 
-    constructor(builder: PlayableItem.Builder) : this(
-        path = builder.path,
-        title = builder.title,
-        artist = builder.artist,
-    )
-}
+internal val PlayableItem.uri get() = Uri.parse(path)
+
+internal fun PlayableItem.Companion.create(
+    path: String,
+    title: String?,
+    artist: String?
+): PlayableItem = PlayableItemImpl(path, title, artist)

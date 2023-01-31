@@ -1,6 +1,4 @@
-package com.freshdigitable.ohlplayer.store
-
-import android.net.Uri
+package com.freshdigitable.ohlplayer.model
 
 /**
  * Created by akihit on 2017/06/06.
@@ -9,7 +7,6 @@ interface PlayableItem : Comparable<PlayableItem?> {
     val path: String
     val title: String?
     val artist: String?
-    val uri: Uri
 
     override fun compareTo(other: PlayableItem?): Int {
         if (other == null) {
@@ -24,21 +21,5 @@ interface PlayableItem : Comparable<PlayableItem?> {
     override fun hashCode(): Int
     override fun equals(other: Any?): Boolean
 
-    class Builder(var path: String) {
-        var title: String? = null
-        var artist: String? = null
-        fun title(title: String?): Builder {
-            this.title = title
-            return this
-        }
-
-        fun artist(artist: String?): Builder {
-            this.artist = artist
-            return this
-        }
-
-        fun build(): PlayableItem {
-            return PlayableItemImpl(this)
-        }
-    }
+    companion object
 }

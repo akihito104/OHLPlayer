@@ -24,8 +24,10 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.freshdigitable.ohlplayer.databinding.ActivityMediaListBinding
 import com.freshdigitable.ohlplayer.databinding.ViewMediaListItemBinding
-import com.freshdigitable.ohlplayer.store.PlayableItem
+import com.freshdigitable.ohlplayer.model.PlayableItem
 import com.freshdigitable.ohlplayer.store.PlayableItemStore
+import com.freshdigitable.ohlplayer.store.create
+import com.freshdigitable.ohlplayer.store.uri
 import kotlinx.coroutines.flow.collectLatest
 import java.io.File
 import java.io.IOException
@@ -90,10 +92,11 @@ class MediaListActivity : AppCompatActivity() {
                 val artist =
                     metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                 val path = uri.toString()
-                PlayableItem.Builder(path)
-                    .title(if (title.isNullOrEmpty()) File(path).name else title)
-                    .artist(artist)
-                    .build()
+                PlayableItem.create(
+                    path = path,
+                    title = if (title.isNullOrEmpty()) File(path).name else title,
+                    artist = artist,
+                )
             }
         }
     }
@@ -169,6 +172,7 @@ class MediaListActivity : AppCompatActivity() {
     }
 
     companion object {
+        @Suppress("unused")
         private val TAG = MediaListActivity::class.simpleName
     }
 }

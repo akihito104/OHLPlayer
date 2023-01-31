@@ -1,5 +1,6 @@
 package com.freshdigitable.ohlplayer.store
 
+import com.freshdigitable.ohlplayer.model.PlayableItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
