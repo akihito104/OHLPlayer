@@ -1,9 +1,5 @@
 package com.freshdigitable.ohlplayer.model
 
-import android.content.Context
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.*
-import java.io.IOException
-import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -11,7 +7,7 @@ import java.util.concurrent.Future
 /**
  * Created by akihit on 2017/05/14.
  */
-class CenterHRTFConvoTask private constructor(
+class CenterHRTFConvoTask internal constructor(
     private val hrirL: ImpulseResponse,
     private val hrirR: ImpulseResponse,
 ) : ConvoTask {
@@ -50,24 +46,5 @@ class CenterHRTFConvoTask private constructor(
 
     override fun release() {
         executor.shutdown()
-    }
-
-    companion object {
-        @Throws(IOException::class)
-        fun create(context: Context): CenterHRTFConvoTask {
-            val hrirL: ImpulseResponse = ImpulseResponse.load(
-                context,
-                DIRECTION.C,
-                CHANNEL.L,
-                SamplingFreq.HZ_44100
-            )
-            val hrirR: ImpulseResponse = ImpulseResponse.load(
-                context,
-                DIRECTION.C,
-                CHANNEL.R,
-                SamplingFreq.HZ_44100
-            )
-            return CenterHRTFConvoTask(hrirL, hrirR)
-        }
     }
 }

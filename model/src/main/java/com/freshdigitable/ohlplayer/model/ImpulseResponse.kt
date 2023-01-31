@@ -1,11 +1,5 @@
 package com.freshdigitable.ohlplayer.model
 
-import android.content.Context
-import android.content.res.AssetFileDescriptor
-import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.channels.FileChannel
 import java.util.concurrent.Callable
 import kotlin.math.max
 import kotlin.math.sqrt
@@ -13,7 +7,7 @@ import kotlin.math.sqrt
 /**
  * Created by akihit on 2015/04/18.
  */
-class ImpulseResponse private constructor(private var impulseRes: DoubleArray) {
+class ImpulseResponse(private var impulseRes: DoubleArray) {
     private var hrtf = ComplexArray(0)
     private var cache = ComplexArray(0)
     private var res = IntArray(0)
@@ -96,7 +90,7 @@ class ImpulseResponse private constructor(private var impulseRes: DoubleArray) {
         L, R
     }
 
-    enum class SamplingFreq(internal val freq: Int) {
+    enum class SamplingFreq(val freq: Int) {
         HZ_44100(44100), HZ_48000(48000);
 
         companion object {
@@ -106,40 +100,5 @@ class ImpulseResponse private constructor(private var impulseRes: DoubleArray) {
         }
     }
 
-    companion object {
-        @Throws(IOException::class)
-        fun load(
-            context: Context,
-            dir: DIRECTION,
-            ch: CHANNEL,
-            freq: SamplingFreq
-        ): ImpulseResponse {
-            val name = "imp" + dir.name + ch.name + "_" + freq.fileName + "_20k.DDB"
-            return load(context, name)
-        }
-
-        private val SamplingFreq.fileName: String get() = "${this.freq}"
-
-        @Throws(IOException::class)
-        private fun load(context: Context, name: String): ImpulseResponse {
-            return load(context.assets.openFd(name))
-        }
-
-        @Throws(IOException::class)
-        private fun load(afd: AssetFileDescriptor): ImpulseResponse {
-            val bb = ByteBuffer.allocate(afd.length.toInt()).order(ByteOrder.LITTLE_ENDIAN)
-            var fc: FileChannel? = null
-            val bufSize: Int
-            try {
-                fc = afd.createInputStream().channel
-                bufSize = fc.read(bb)
-            } finally {
-                fc?.close()
-            }
-            bb.flip()
-            val doubleBuf = DoubleArray(bufSize / 8)
-            bb.asDoubleBuffer()[doubleBuf]
-            return ImpulseResponse(doubleBuf)
-        }
-    }
+    companion object
 }

@@ -1,11 +1,11 @@
 package com.freshdigitable.ohlplayer
 
 import android.content.Context
+import android.content.res.AssetFileDescriptor
 import android.util.Log
 import com.freshdigitable.ohlplayer.model.AudioChannels
 import com.freshdigitable.ohlplayer.model.ConvoTask
 import com.freshdigitable.ohlplayer.model.ImpulseResponse
-import com.freshdigitable.ohlplayer.model.StereoHRTFConvoTask
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.audio.AudioProcessor
 import com.google.android.exoplayer2.audio.AudioProcessor.UnhandledAudioFormatException
@@ -13,6 +13,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.ShortBuffer
+import java.nio.channels.FileChannel
 import kotlin.math.min
 
 /**
@@ -23,6 +24,7 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
     private var channelCount = 0
     private var samplingFreq = 0
     private var convoTask: ConvoTask? = null
+
     @Throws(UnhandledAudioFormatException::class)
     override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         val encoding = inputAudioFormat.encoding
@@ -38,7 +40,7 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
         }
         if (samplingFreq != sampleRateHz) {
             try {
-                convoTask = StereoHRTFConvoTask.create(context, sampleRateHz)
+                convoTask = ConvoTask.createStereo(context, sampleRateHz)
                 samplingFreq = sampleRateHz
             } catch (e: IOException) {
                 Log.e(TAG, "creating ConvoTask is failed...", e)
@@ -52,7 +54,7 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
 
     override fun isActive(): Boolean {
         return (channelCount != 0
-                && convoTask != null)
+            && convoTask != null)
     }
 
     private var buf = AudioProcessor.EMPTY_BUFFER
@@ -179,5 +181,89 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
     companion object {
         private val TAG = OHLAudioProcessor::class.java.simpleName
         private const val LIMIT_VALUE = 30000 // ~92% of max PCM 16bit value
+
+        private fun ConvoTask.Companion.createStereo(
+            context: Context,
+            sampleRateHz: Int,
+        ): ConvoTask {
+            val freq = ImpulseResponse.SamplingFreq.Companion.valueOf(sampleRateHz)
+            val hrirL30L = ImpulseResponse.load(
+                context,
+                ImpulseResponse.DIRECTION.L30,
+                ImpulseResponse.CHANNEL.L,
+                freq
+            )
+            val hrirL30R = ImpulseResponse.load(
+                context,
+                ImpulseResponse.DIRECTION.L30,
+                ImpulseResponse.CHANNEL.R,
+                freq
+            )
+            val hrirR30L = ImpulseResponse.load(
+                context,
+                ImpulseResponse.DIRECTION.R30,
+                ImpulseResponse.CHANNEL.L,
+                freq
+            )
+            val hrirR30R = ImpulseResponse.load(
+                context,
+                ImpulseResponse.DIRECTION.R30,
+                ImpulseResponse.CHANNEL.R,
+                freq
+            )
+            return create(ConvoTask.Config.Stereo(hrirL30L, hrirL30R, hrirR30L, hrirR30R))
+        }
+
+        @Suppress("unused")
+        private fun ConvoTask.Companion.createCenter(context: Context): ConvoTask {
+            val hrirL = ImpulseResponse.load(
+                context,
+                ImpulseResponse.DIRECTION.C,
+                ImpulseResponse.CHANNEL.L,
+                ImpulseResponse.SamplingFreq.HZ_44100
+            )
+            val hrirR = ImpulseResponse.load(
+                context,
+                ImpulseResponse.DIRECTION.C,
+                ImpulseResponse.CHANNEL.R,
+                ImpulseResponse.SamplingFreq.HZ_44100
+            )
+            return create(ConvoTask.Config.Center(hrirL, hrirR))
+        }
+
+        @Throws(IOException::class)
+        fun ImpulseResponse.Companion.load(
+            context: Context,
+            dir: ImpulseResponse.DIRECTION,
+            ch: ImpulseResponse.CHANNEL,
+            freq: ImpulseResponse.SamplingFreq
+        ): ImpulseResponse {
+            val name = "imp" + dir.name + ch.name + "_" + freq.fileName + "_20k.DDB"
+            return load(context, name)
+        }
+
+        private val ImpulseResponse.SamplingFreq.fileName: String get() = "${this.freq}"
+
+        @Throws(IOException::class)
+        private fun load(context: Context, name: String): ImpulseResponse {
+            return load(context.assets.openFd(name))
+        }
+
+        @Throws(IOException::class)
+        private fun load(afd: AssetFileDescriptor): ImpulseResponse {
+            val bb = ByteBuffer.allocate(afd.length.toInt()).order(ByteOrder.LITTLE_ENDIAN)
+            var fc: FileChannel? = null
+            val bufSize: Int
+            try {
+                fc = afd.createInputStream().channel
+                bufSize = fc.read(bb)
+            } finally {
+                fc?.close()
+            }
+            bb.flip()
+            val doubleBuf = DoubleArray(bufSize / 8)
+            bb.asDoubleBuffer()[doubleBuf]
+            return ImpulseResponse(doubleBuf)
+        }
     }
 }
