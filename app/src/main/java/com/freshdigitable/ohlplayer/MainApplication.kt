@@ -7,5 +7,10 @@ import com.freshdigitable.ohlplayer.store.PlayableItemStore
  * Created by akihit on 2017/05/27.
  */
 class MainApplication : Application() {
-    val playableItemStore = PlayableItemStore();
+    lateinit var playableItemStore: PlayableItemStore
+
+    override fun onCreate() {
+        super.onCreate()
+        playableItemStore = PlayableItemStore(applicationContext)
+    }
 }

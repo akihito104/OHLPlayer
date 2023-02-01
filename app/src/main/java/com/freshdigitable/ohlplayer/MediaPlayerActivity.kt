@@ -12,8 +12,9 @@ import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.freshdigitable.ohlplayer.databinding.ActivityMediaPlayerBinding
-import com.freshdigitable.ohlplayer.store.PlayableItem
+import com.freshdigitable.ohlplayer.model.PlayableItem
 import com.freshdigitable.ohlplayer.store.PlayableItemStore
+import com.freshdigitable.ohlplayer.store.uri
 import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -75,7 +76,6 @@ class MediaPlayerActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        playableItemStore.open()
         setupTitle()
 
         val controller = binding?.playerController ?: return
@@ -109,7 +109,6 @@ class MediaPlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        playableItemStore.close()
         window.decorView.setOnSystemUiVisibilityChangeListener(null)
         (binding?.playerController?.parent as? View)?.setOnClickListener(null)
     }
@@ -172,6 +171,7 @@ class MediaPlayerActivity : AppCompatActivity() {
             && isInMultiWindowMode)
 
     companion object {
+        @Suppress("unused")
         private val TAG = MediaPlayerActivity::class.java.simpleName
         private const val EXTRA_PATH = "path"
         private fun createIntent(context: Context, item: PlayableItem): Intent {

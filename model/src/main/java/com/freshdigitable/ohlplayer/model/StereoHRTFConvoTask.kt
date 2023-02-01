@@ -1,9 +1,5 @@
 package com.freshdigitable.ohlplayer.model
 
-import android.content.Context
-import com.freshdigitable.ohlplayer.model.ImpulseResponse.*
-import java.io.IOException
-import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
@@ -13,7 +9,7 @@ import kotlin.math.sqrt
 /**
  * Created by akihit on 2017/05/15.
  */
-class StereoHRTFConvoTask private constructor(
+class StereoHRTFConvoTask internal constructor(
     private val hrirL30L: ImpulseResponse, private val hrirL30R: ImpulseResponse,
     private val hrirR30L: ImpulseResponse, private val hrirR30R: ImpulseResponse
 ) : ConvoTask {
@@ -68,12 +64,12 @@ class StereoHRTFConvoTask private constructor(
     }
 
     @Throws(ExecutionException::class, InterruptedException::class)
-    private fun add(a: Future<IntArray?>, b: Future<IntArray?>): IntArray {
+    private fun add(a: Future<IntArray>, b: Future<IntArray>): IntArray {
         val aa = a.get()
         val bb = b.get()
-        val res = IntArray(aa!!.size)
+        val res = IntArray(aa.size)
         for (i in res.indices) {
-            res[i] = (aa[i] + bb!![i]) / 2
+            res[i] = (aa[i] + bb[i]) / 2
         }
         return res
     }
@@ -107,27 +103,6 @@ class StereoHRTFConvoTask private constructor(
     }
 
     companion object {
-        @Throws(IOException::class)
-        fun create(context: Context, samplingFreq: Int): StereoHRTFConvoTask {
-            return create(context, SamplingFreq.Companion.valueOf(samplingFreq))
-        }
-
-        @Throws(IOException::class)
-        private fun create(
-            context: Context,
-            freq: SamplingFreq
-        ): StereoHRTFConvoTask {
-            val hrirL30L: ImpulseResponse =
-                ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.L, freq)
-            val hrirL30R: ImpulseResponse =
-                ImpulseResponse.load(context, DIRECTION.L30, CHANNEL.R, freq)
-            val hrirR30L: ImpulseResponse =
-                ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.L, freq)
-            val hrirR30R: ImpulseResponse =
-                ImpulseResponse.load(context, DIRECTION.R30, CHANNEL.R, freq)
-            return StereoHRTFConvoTask(hrirL30L, hrirL30R, hrirR30L, hrirR30R)
-        }
-
         private const val RESPONSE_LENGTH = 1800
         private const val RESPONSE_AMP = 3.0
     }
