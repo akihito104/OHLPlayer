@@ -13,7 +13,6 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.ShortBuffer
-import java.nio.channels.FileChannel
 import kotlin.math.min
 
 /**
@@ -252,14 +251,8 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
         @Throws(IOException::class)
         private fun load(afd: AssetFileDescriptor): ImpulseResponse {
             val bb = ByteBuffer.allocate(afd.length.toInt()).order(ByteOrder.LITTLE_ENDIAN)
-            var fc: FileChannel? = null
-            val bufSize: Int
-            try {
-                fc = afd.createInputStream().channel
-                bufSize = fc.read(bb)
-            } finally {
-                fc?.close()
-            }
+            val bufSize: Int = afd.createInputStream().channel
+                .use { fc -> fc.read(bb) }
             bb.flip()
             val doubleBuf = DoubleArray(bufSize / 8)
             bb.asDoubleBuffer()[doubleBuf]

@@ -64,12 +64,12 @@ class StereoHRTFConvoTask internal constructor(
     }
 
     @Throws(ExecutionException::class, InterruptedException::class)
-    private fun add(a: Future<IntArray?>, b: Future<IntArray?>): IntArray {
+    private fun add(a: Future<IntArray>, b: Future<IntArray>): IntArray {
         val aa = a.get()
         val bb = b.get()
-        val res = IntArray(aa!!.size)
+        val res = IntArray(aa.size)
         for (i in res.indices) {
-            res[i] = (aa[i] + bb!![i]) / 2
+            res[i] = (aa[i] + bb[i]) / 2
         }
         return res
     }
