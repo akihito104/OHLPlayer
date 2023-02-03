@@ -69,7 +69,7 @@ class MediaPlayerActivity : AppCompatActivity() {
             player = simpleExoPlayer
             show()
         }
-        val extractorMediaSource = createExtractorMediaSource(applicationContext, uri!!)
+        val extractorMediaSource = createExtractorMediaSource(applicationContext, uri)
         simpleExoPlayer.setMediaSource(extractorMediaSource)
         simpleExoPlayer.prepare()
     }
@@ -101,7 +101,6 @@ class MediaPlayerActivity : AppCompatActivity() {
 
     private fun setupTitle() {
         val supportActionBar = supportActionBar ?: return
-        val path = this.path ?: return
         val item = playableItemStore.findByPath(path) ?: return
         supportActionBar.title = item.title
         supportActionBar.subtitle = item.artist
@@ -124,10 +123,12 @@ class MediaPlayerActivity : AppCompatActivity() {
         binding = null
     }
 
-    private val uri: Uri?
+    private val uri: Uri
         get() = intent.data
-    private val path: String?
+            ?: throw IllegalStateException("use MediaPlayerActivity.start() to launch")
+    private val path: String
         get() = intent.getStringExtra(EXTRA_PATH)
+            ?: throw IllegalStateException("use MediaPlayerActivity.start() to launch")
     private val isSystemUIVisible: Boolean
         get() = isSystemUIVisible(window.decorView.systemUiVisibility)
 

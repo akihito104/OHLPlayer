@@ -84,10 +84,7 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
 
     private fun setupBuffer(shortBuffer: ShortBuffer) {
         val remaining = shortBuffer.remaining()
-        var bufLength = remaining
-        if (channelCount == 1) {
-            bufLength *= 2
-        }
+        val bufLength = if (channelCount == 1) remaining * 2 else remaining
         if (inBuf.size != bufLength) {
             inBuf = ShortArray(bufLength)
         }
