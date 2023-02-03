@@ -60,11 +60,15 @@ class PlayableItemStore(
                     metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
                 val artist =
                     metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+                val mimeType =
+                    metadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
+                        ?: ""
                 val path = uri.toString()
                 PlayableItem.create(
                     path = path,
                     title = if (title.isNullOrEmpty()) File(path).name else title,
                     artist = artist,
+                    mimeType = mimeType,
                 )
             }
         }

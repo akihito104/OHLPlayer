@@ -2,31 +2,41 @@ package com.freshdigitable.ohlplayer
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import androidx.annotation.ColorInt
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.freshdigitable.ohlplayer.databinding.ActivityMediaPlayerBinding
+import com.freshdigitable.ohlplayer.model.ComplexArray
 import com.freshdigitable.ohlplayer.model.PlayableItem
 import com.freshdigitable.ohlplayer.store.PlayableItemStore
 import com.freshdigitable.ohlplayer.store.uri
-import com.google.android.exoplayer2.DefaultRenderersFactory
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.audio.AudioSink
-import com.google.android.exoplayer2.audio.DefaultAudioSink
+import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.audio.*
 import com.google.android.exoplayer2.audio.DefaultAudioSink.DefaultAudioProcessorChain
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
+import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.exoplayer2.video.VideoSize
+import java.lang.System.arraycopy
+import java.nio.ByteBuffer
+import java.nio.ShortBuffer
+import kotlin.math.log10
+import kotlin.math.pow
 
 class MediaPlayerActivity : AppCompatActivity() {
     private var simpleExoPlayer: ExoPlayer? = null
@@ -49,22 +59,41 @@ class MediaPlayerActivity : AppCompatActivity() {
             it.setOnCheckedChangeListener { _, isChecked -> audioProcessor.setEnabled(isChecked) }
         }
 
-        val simpleExoPlayer = createPlayer(applicationContext, audioProcessor)
+        val simpleExoPlayer = createPlayer(
+            applicationContext,
+            audioProcessor,
+            VisualizerProcessor(object : VisualizerProcessor.Listener {
+                override fun onInput(
+                    audioFormat: AudioProcessor.AudioFormat,
+                    ampL: DoubleArray,
+                    ampR: DoubleArray,
+                ) {
+                    Log.d(TAG, "onInput: $audioFormat")
+                    binding.playerVisualizer.setAmp(ampL, ampR)
+                }
+            }),
+        )
         this.simpleExoPlayer = simpleExoPlayer
         val surfaceContainer = binding.playerSurfaceViewContainer
-        simpleExoPlayer.addListener(object : Player.Listener {
-            override fun onVideoSizeChanged(videoSize: VideoSize) {
-                val width = videoSize.width
-                val height = videoSize.height
-                val pixelWidthHeightRatio = videoSize.pixelWidthHeightRatio
-                val aspectRatio: Float =
-                    if (height == 0) 1.0f else width * pixelWidthHeightRatio / height
-                surfaceContainer.setAspectRatio(aspectRatio)
-            }
+        val mimeType = playableItemStore.findByPath(path)?.mimeType
+        if (MimeTypes.isVideo(mimeType)) {
+            binding.playerVisualizer.visibility = View.GONE
+            binding.playerSurfaceView.visibility = View.VISIBLE
+            simpleExoPlayer.addListener(object : Player.Listener {
+                override fun onVideoSizeChanged(videoSize: VideoSize) {
+                    val aspectRatio: Float = if (videoSize.height == 0) 1.0f
+                    else videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
+                    surfaceContainer.setAspectRatio(aspectRatio)
+                }
 
-            override fun onRenderedFirstFrame() {}
-        })
-        simpleExoPlayer.setVideoSurfaceView(binding.playerSurfaceView)
+                override fun onRenderedFirstFrame() {}
+            })
+            simpleExoPlayer.setVideoSurfaceView(binding.playerSurfaceView)
+        } else if (MimeTypes.isAudio(mimeType)) {
+            // TODO
+            binding.playerVisualizer.visibility = View.VISIBLE
+            binding.playerSurfaceView.visibility = View.GONE
+        }
         binding.playerController.apply {
             player = simpleExoPlayer
             show()
@@ -78,25 +107,25 @@ class MediaPlayerActivity : AppCompatActivity() {
         super.onStart()
         setupTitle()
 
-        val controller = binding?.playerController ?: return
-        window.decorView.setOnSystemUiVisibilityChangeListener { visibility: Int ->
-            if (isSystemUIVisible(visibility)) {
-                showOverlayUI(supportActionBar)
-                controller.show()
-            } else {
-                hideOverlayUI(supportActionBar)
-                controller.hide()
-            }
-        }
-        (controller.parent as? View)?.setOnClickListener { _: View? ->
-            if (isSystemUIVisible) {
-                hideSystemUI()
-                controller.hide()
-            } else {
-                showSystemUI()
-                controller.show()
-            }
-        }
+//        val controller = binding?.playerController ?: return
+//        window.decorView.setOnSystemUiVisibilityChangeListener { visibility: Int ->
+//            if (isSystemUIVisible(visibility)) {
+//                showOverlayUI(supportActionBar)
+//                controller.show()
+//            } else {
+//                hideOverlayUI(supportActionBar)
+//                controller.hide()
+//            }
+//        }
+//        (controller.parent as? View)?.setOnClickListener { _: View? ->
+//            if (isSystemUIVisible) {
+//                hideSystemUI()
+//                controller.hide()
+//            } else {
+//                showSystemUI()
+//                controller.show()
+//            }
+//        }
     }
 
     private fun setupTitle() {
@@ -193,7 +222,8 @@ class MediaPlayerActivity : AppCompatActivity() {
 
         private fun createPlayer(
             context: Context,
-            ohlAudioProcessor: OHLAudioProcessor
+            ohlAudioProcessor: OHLAudioProcessor,
+            visualizerProcessor: AudioProcessor,
         ): ExoPlayer {
             val renderersFactory: DefaultRenderersFactory =
                 object : DefaultRenderersFactory(context) {
@@ -202,11 +232,21 @@ class MediaPlayerActivity : AppCompatActivity() {
                         enableFloatOutput: Boolean,
                         enableAudioTrackPlaybackParams: Boolean,
                         enableOffload: Boolean
-                    ): AudioSink {
-                        return DefaultAudioSink.Builder()
-                            .setAudioProcessorChain(DefaultAudioProcessorChain(ohlAudioProcessor))
-                            .build()
-                    }
+                    ): AudioSink = DefaultAudioSink.Builder()
+                        .setAudioCapabilities(AudioCapabilities.getCapabilities(context))
+                        .setEnableFloatOutput(enableFloatOutput)
+                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                        .setOffloadMode(
+                            if (enableOffload) DefaultAudioSink.OFFLOAD_MODE_ENABLED_GAPLESS_REQUIRED
+                            else DefaultAudioSink.OFFLOAD_MODE_DISABLED
+                        )
+                        .setAudioProcessorChain(
+                            DefaultAudioProcessorChain(
+                                ohlAudioProcessor,
+                                visualizerProcessor,
+                            )
+                        )
+                        .build()
                 }
             return ExoPlayer.Builder(context, renderersFactory).build()
         }
@@ -232,5 +272,143 @@ class MediaPlayerActivity : AppCompatActivity() {
         private fun hideOverlayUI(actionBar: ActionBar?) {
             actionBar?.hide()
         }
+    }
+}
+
+class VisualizerProcessor(
+    private val listener: Listener,
+) : BaseAudioProcessor() {
+    private var inBuf: ShortArray = ShortArray(0)
+    private var chL = ShortArray(0)
+    private var chR = ShortArray(0)
+    private var fftChL = ComplexArray(0)
+    private var fftChR = ComplexArray(0)
+    private var ampChL = DoubleArray(0)
+    private var ampChR = DoubleArray(0)
+
+    override fun onConfigure(
+        inputAudioFormat: AudioProcessor.AudioFormat
+    ): AudioProcessor.AudioFormat = inputAudioFormat
+
+    override fun queueInput(inputBuffer: ByteBuffer) {
+        val remaining = inputBuffer.remaining()
+        if (remaining == 0) {
+            return
+        }
+        val buffer = inputBuffer.asReadOnlyBuffer()
+        visualize(buffer)
+        replaceOutputBuffer(remaining).put(inputBuffer).flip()
+    }
+
+    private fun visualize(buffer: ByteBuffer) {
+        // ComplexArray
+        setupBuffer(buffer.asShortBuffer())
+        setupChannel(inBuf)
+        // process frequency amplitude char.
+        if (ampChL.size != fftChL.size()) {
+            ampChL = DoubleArray(fftChL.size() / 2)
+        }
+        fftChL.fft(chL)
+        fftChL.calcAmpCharacteristic(ampChL)
+        if (ampChR.size != fftChR.size()) {
+            ampChR = DoubleArray(fftChR.size() / 2)
+        }
+        fftChR.fft(chR)
+        fftChR.calcAmpCharacteristic(ampChR)
+        // pass to listener
+        listener.onInput(inputAudioFormat, ampL = ampChL, ampR = ampChR)
+    }
+
+    private fun setupBuffer(shortBuffer: ShortBuffer) {
+        val remaining = shortBuffer.remaining()
+        val bufLength = if (inputAudioFormat.channelCount == 1) remaining * 2 else remaining
+        if (inBuf.size != bufLength) {
+            inBuf = ShortArray(bufLength)
+        }
+        if (inputAudioFormat.channelCount == 1) {
+            for (i in 0 until remaining) {
+                val s = shortBuffer[i]
+                inBuf[2 * i] = s
+                inBuf[2 * i + 1] = s
+            }
+        } else {
+            shortBuffer[inBuf]
+        }
+    }
+
+    private fun setupChannel(input: ShortArray) {
+        val size = input.size / 2
+        if (size != chL.size) {
+            chL = ShortArray(size)
+            chR = ShortArray(size)
+        }
+        for (i in 0 until size) {
+            chL[i] = input[i * 2]
+            chR[i] = input[i * 2 + 1]
+        }
+        val fftSize: Int = ComplexArray.calcFFTSize(size)
+        if (fftChL.size() != fftSize) {
+            fftChL = ComplexArray(fftSize)
+            fftChR = ComplexArray(fftSize)
+        }
+    }
+
+    companion object {
+        private fun ComplexArray.calcAmpCharacteristic(dst: DoubleArray) {
+            for (i in 0 until size() / 2) {
+                dst[i] = 10.0 * log10(real[i].pow(2) + imag[i].pow(2))
+            }
+        }
+    }
+
+    interface Listener {
+        fun onInput(audioFormat: AudioProcessor.AudioFormat, ampL: DoubleArray, ampR: DoubleArray)
+    }
+}
+
+class AmplifierVisualizerView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
+    private var ampL: DoubleArray = DoubleArray(0)
+    private var ampR: DoubleArray = DoubleArray(0)
+    fun setAmp(ampL: DoubleArray, ampR: DoubleArray) {
+        if (ampL.size != this.ampL.size) {
+            this.ampL = DoubleArray(ampL.size)
+        }
+        arraycopy(ampL, 0, this.ampL, 0, ampL.size)
+        if (ampR.size != this.ampR.size) {
+            this.ampR = DoubleArray(ampR.size)
+        }
+        arraycopy(ampR, 0, this.ampR, 0, ampR.size)
+        invalidate()
+    }
+
+    private val path = Path()
+    private val paint = Paint().apply {
+        strokeWidth = 3f
+        style = Paint.Style.STROKE
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        canvas.drawAmp(ampL, Color.BLUE)
+        canvas.drawAmp(ampR, Color.RED)
+    }
+
+    private fun Canvas.drawAmp(amp: DoubleArray, @ColorInt color: Int) {
+        path.reset()
+        paint.color = color
+
+        val offsetY = height.toFloat() * 0.75f
+        val h = height / 2
+        path.moveTo(0f, offsetY)
+        amp.forEachIndexed { i, a ->
+            val x = i.toFloat() / amp.size.toFloat()
+            val y: Float = a.toFloat() / 150f
+            path.lineTo(x * width, -y * h + offsetY)
+        }
+        drawPath(path, paint)
     }
 }
