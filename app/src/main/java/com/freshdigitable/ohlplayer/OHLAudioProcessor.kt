@@ -65,8 +65,9 @@ class OHLAudioProcessor(context: Context) : AudioProcessor {
         if (inputBuf.remaining() <= 0) {
             return
         }
-        if (buf.remaining() != inputBuf.remaining()) {
-            buf = ByteBuffer.allocate(inputBuf.remaining()).order(ByteOrder.nativeOrder())
+        val requiredSize = if (channelCount == 1) inputBuf.remaining() * 2 else inputBuf.remaining()
+        if (buf.remaining() != requiredSize) {
+            buf = ByteBuffer.allocate(requiredSize).order(ByteOrder.nativeOrder())
         } else {
             buf.clear()
         }
