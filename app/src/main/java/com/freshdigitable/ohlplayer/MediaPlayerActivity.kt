@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.AttributeSet
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -34,9 +33,11 @@ import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.exoplayer2.video.VideoSize
 import java.lang.System.arraycopy
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.ShortBuffer
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.log10
-import kotlin.math.pow
 
 class MediaPlayerActivity : AppCompatActivity() {
     private var simpleExoPlayer: ExoPlayer? = null
@@ -68,7 +69,7 @@ class MediaPlayerActivity : AppCompatActivity() {
                     ampL: DoubleArray,
                     ampR: DoubleArray,
                 ) {
-                    Log.d(TAG, "onInput: $audioFormat")
+//                    Log.d(TAG, "onInput: $audioFormat")
                     binding.playerVisualizer.setAmp(ampL, ampR)
                 }
             }),
@@ -90,7 +91,6 @@ class MediaPlayerActivity : AppCompatActivity() {
             })
             simpleExoPlayer.setVideoSurfaceView(binding.playerSurfaceView)
         } else if (MimeTypes.isAudio(mimeType)) {
-            // TODO
             binding.playerVisualizer.visibility = View.VISIBLE
             binding.playerSurfaceView.visibility = View.GONE
         }
@@ -295,7 +295,7 @@ class VisualizerProcessor(
         if (remaining == 0) {
             return
         }
-        val buffer = inputBuffer.asReadOnlyBuffer()
+        val buffer = inputBuffer.asReadOnlyBuffer().order(ByteOrder.nativeOrder())
         visualize(buffer)
         replaceOutputBuffer(remaining).put(inputBuffer).flip()
     }
@@ -305,15 +305,18 @@ class VisualizerProcessor(
         setupBuffer(buffer.asShortBuffer())
         setupChannel(inBuf)
         // process frequency amplitude char.
-        if (ampChL.size != fftChL.size()) {
+        chL.hammingWindow()
+        fftChL.fft(chL)
+        if (ampChL.size != fftChL.size() / 2) {
             ampChL = DoubleArray(fftChL.size() / 2)
         }
-        fftChL.fft(chL)
         fftChL.calcAmpCharacteristic(ampChL)
-        if (ampChR.size != fftChR.size()) {
+
+        chR.hammingWindow()
+        fftChR.fft(chR)
+        if (ampChR.size != fftChR.size() / 2) {
             ampChR = DoubleArray(fftChR.size() / 2)
         }
-        fftChR.fft(chR)
         fftChR.calcAmpCharacteristic(ampChR)
         // pass to listener
         listener.onInput(inputAudioFormat, ampL = ampChL, ampR = ampChR)
@@ -332,7 +335,7 @@ class VisualizerProcessor(
                 inBuf[2 * i + 1] = s
             }
         } else {
-            shortBuffer[inBuf]
+            shortBuffer.get(inBuf)
         }
     }
 
@@ -355,8 +358,15 @@ class VisualizerProcessor(
 
     companion object {
         private fun ComplexArray.calcAmpCharacteristic(dst: DoubleArray) {
-            for (i in 0 until size() / 2) {
-                dst[i] = 10.0 * log10(real[i].pow(2) + imag[i].pow(2))
+            for (i in dst.indices) {
+                dst[i] = 10.0 * log10(real[i] * real[i] + imag[i] * imag[i])
+            }
+        }
+
+        private fun ShortArray.hammingWindow() {
+            for (i in this.indices) {
+                this[i] =
+                    (this[i] * (0.54 - 0.46 * cos(2.0 * PI * i / this.size))).toInt().toShort()
             }
         }
     }
