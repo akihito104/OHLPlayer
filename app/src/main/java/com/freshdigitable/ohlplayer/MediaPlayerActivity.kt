@@ -278,13 +278,6 @@ class MediaPlayerActivity : AppCompatActivity() {
 class VisualizerProcessor(
     private val listener: Listener,
 ) : BaseAudioProcessor() {
-    private var inBuf: ShortArray = ShortArray(0)
-    private var chL = ShortArray(0)
-    private var chR = ShortArray(0)
-    private var fftChL = ComplexArray(0)
-    private var fftChR = ComplexArray(0)
-    private var ampChL = DoubleArray(0)
-    private var ampChR = DoubleArray(0)
 
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat
@@ -296,33 +289,13 @@ class VisualizerProcessor(
             return
         }
         val buffer = inputBuffer.asReadOnlyBuffer().order(ByteOrder.nativeOrder())
-        visualize(buffer)
+        val buf = setupBuffer(buffer.asShortBuffer())
+        visualize(buf)
         replaceOutputBuffer(remaining).put(inputBuffer).flip()
     }
 
-    private fun visualize(buffer: ByteBuffer) {
-        // ComplexArray
-        setupBuffer(buffer.asShortBuffer())
-        setupChannel(inBuf)
-        // process frequency amplitude char.
-        chL.hammingWindow()
-        fftChL.fft(chL)
-        if (ampChL.size != fftChL.size() / 2) {
-            ampChL = DoubleArray(fftChL.size() / 2)
-        }
-        fftChL.calcAmpCharacteristic(ampChL)
-
-        chR.hammingWindow()
-        fftChR.fft(chR)
-        if (ampChR.size != fftChR.size() / 2) {
-            ampChR = DoubleArray(fftChR.size() / 2)
-        }
-        fftChR.calcAmpCharacteristic(ampChR)
-        // pass to listener
-        listener.onInput(inputAudioFormat, ampL = ampChL, ampR = ampChR)
-    }
-
-    private fun setupBuffer(shortBuffer: ShortBuffer) {
+    private var inBuf: ShortArray = ShortArray(0)
+    private fun setupBuffer(shortBuffer: ShortBuffer): ShortArray {
         val remaining = shortBuffer.remaining()
         val bufLength = if (inputAudioFormat.channelCount == 1) remaining * 2 else remaining
         if (inBuf.size != bufLength) {
@@ -337,8 +310,13 @@ class VisualizerProcessor(
         } else {
             shortBuffer.get(inBuf)
         }
+        return inBuf
     }
 
+    private var chL = ShortArray(0)
+    private var chR = ShortArray(0)
+    private var fftChL = ComplexArray(0)
+    private var fftChR = ComplexArray(0)
     private fun setupChannel(input: ShortArray) {
         val size = input.size / 2
         if (size != chL.size) {
@@ -356,6 +334,32 @@ class VisualizerProcessor(
         }
     }
 
+    private var ampChL = DoubleArray(0)
+    private var ampChR = DoubleArray(0)
+    private fun visualize(inBuf: ShortArray) {
+        // ComplexArray
+        setupChannel(inBuf)
+        // process frequency amplitude char.
+        ampChL = calcSpectre(chL, fftChL, ampChL)
+        ampChR = calcSpectre(chR, fftChR, ampChR)
+        // pass to listener
+        listener.onInput(inputAudioFormat, ampL = ampChL, ampR = ampChR)
+    }
+
+    private fun calcSpectre(
+        input: ShortArray,
+        fftDest: ComplexArray,
+        spectreDest: DoubleArray,
+    ): DoubleArray {
+        val res = if (spectreDest.size != fftDest.size() / 2) {
+            DoubleArray(fftDest.size() / 2)
+        } else spectreDest
+        input.hammingWindow()
+        fftDest.fft(input)
+        fftDest.calcAmpCharacteristic(res)
+        return res
+    }
+
     companion object {
         private fun ComplexArray.calcAmpCharacteristic(dst: DoubleArray) {
             for (i in dst.indices) {
@@ -364,9 +368,9 @@ class VisualizerProcessor(
         }
 
         private fun ShortArray.hammingWindow() {
+            val omega = 2.0 * PI / this.size
             for (i in this.indices) {
-                this[i] =
-                    (this[i] * (0.54 - 0.46 * cos(2.0 * PI * i / this.size))).toInt().toShort()
+                this[i] = (this[i] * (0.54 - 0.46 * cos(omega * i))).toInt().toShort()
             }
         }
     }
