@@ -7,6 +7,7 @@ interface PlayableItem : Comparable<PlayableItem?> {
     val path: String
     val title: String?
     val artist: String?
+    val mimeType: String
 
     override fun compareTo(other: PlayableItem?): Int {
         if (other == null) {
