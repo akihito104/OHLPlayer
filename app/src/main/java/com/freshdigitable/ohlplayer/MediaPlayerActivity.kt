@@ -70,6 +70,7 @@ class MediaPlayerActivity : AppCompatActivity() {
                     ampR: DoubleArray,
                 ) {
 //                    Log.d(TAG, "onInput: $audioFormat")
+                    binding.playerVisualizer.maxX = audioFormat.sampleRate / 2
                     binding.playerVisualizer.setAmp(ampL, ampR)
                 }
             }),
@@ -387,6 +388,15 @@ class AmplifierVisualizerView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
     private var ampL: DoubleArray = DoubleArray(0)
     private var ampR: DoubleArray = DoubleArray(0)
+    var maxX: Int = 0
+        set(value) {
+            if (field == value) {
+                return
+            }
+            field = value
+            invalidate()
+        }
+
     fun setAmp(ampL: DoubleArray, ampR: DoubleArray) {
         if (ampL.size != this.ampL.size) {
             this.ampL = DoubleArray(ampL.size)
@@ -404,25 +414,40 @@ class AmplifierVisualizerView @JvmOverloads constructor(
         strokeWidth = 3f
         style = Paint.Style.STROKE
     }
+    private val linePainter = Paint().apply {
+        strokeWidth = 2f
+        style = Paint.Style.STROKE
+        color = Color.GRAY
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        canvas.drawScale()
         canvas.drawAmp(ampL, Color.BLUE)
         canvas.drawAmp(ampR, Color.RED)
+    }
+
+    private fun Canvas.drawScale() {
+        val scaleCount: Int = maxX / 5000
+        for (i in 1..scaleCount) {
+            val s: Float = (5000.0 * i * width / maxX).toFloat()
+            drawLine(s, offsetY, s, offsetY - plotHeight, linePainter)
+        }
     }
 
     private fun Canvas.drawAmp(amp: DoubleArray, @ColorInt color: Int) {
         path.reset()
         paint.color = color
 
-        val offsetY = height.toFloat() * 0.75f
-        val h = height / 2
         path.moveTo(0f, offsetY)
         amp.forEachIndexed { i, a ->
             val x = i.toFloat() / amp.size.toFloat()
             val y: Float = a.toFloat() / 150f
-            path.lineTo(x * width, -y * h + offsetY)
+            path.lineTo(x * width, -y * plotHeight + offsetY)
         }
         drawPath(path, paint)
     }
+
+    private val offsetY: Float get() = height.toFloat() * 0.75f
+    private val plotHeight: Float get() = height / 2f
 }
